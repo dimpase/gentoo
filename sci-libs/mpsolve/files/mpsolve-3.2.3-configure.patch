@@ -1,0 +1,46 @@
+Make tests explicit and avoid Python detection when examples are disabled.
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -5,7 +5,7 @@
+ 
+ MPS_MAJOR_VERSION=3
+ MPS_MINOR_VERSION=2
+-MPS_PATCH_VERSION=2
++MPS_PATCH_VERSION=3
+ 
+ AC_DEFINE(MPS_MAJOR_VERSION, 3, [libmps' major version number])
+ AC_DEFINE(MPS_MINOR_VERSION, 2, [libmps' minor version number])
+@@ -341,7 +341,13 @@
+ ##
+ 
+   # Check for the check module, so MPSolve tests can be run.
+-  PKG_CHECK_MODULES([CHECK], [check >= 0.9.4], [have_check=yes], [have_check=no])
++  AC_ARG_ENABLE([tests],
++    AS_HELP_STRING([--enable-tests], [Build the test suite (requires Check)]),
++    [], [enable_tests=no])
++  have_check=no
++  AS_IF([test "x$enable_tests" = xyes], [
++    PKG_CHECK_MODULES([CHECK], [check >= 0.9.4], [have_check=yes])
++  ])
+   AM_CONDITIONAL([CHECK], [test x$have_check = xyes])
+ 
+   AC_SUBST(CHECK_PROGRAMS)
+@@ -574,6 +580,8 @@
+ 
+ 
+ # == PYTHON MODULE ==
++have_python=no
++AS_IF([test "x$build_examples" = xyes], [
+ have_python=yes
+ AM_PATH_PYTHON([2.3],,[:])
+ AC_ARG_VAR([PYTHON_INCLUDE], [Include flags for python, bypassing python-config])
+@@ -599,6 +607,8 @@
+ 	])
+     ])
+   ])
++
++])
+ 
+ ])
+ 
