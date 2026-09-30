@@ -32,7 +32,8 @@ dev-ada/markdown
 dev-ada/prettier-ada
 dev-ada/spawn
 dev-ada/templates-parser
-dev-ada/VSS
+dev-ada/vss-text
+dev-ada/vss-extra
 dev-ada/xmlada
 
 # Michał Górny <mgorny@gentoo.org> (2024-11-06)
@@ -40,4 +41,4 @@ dev-ada/xmlada
 # enforce 64-bit time_t as required by this profile.
 # Andreas K. Hüttel <dilfridge@gentoo.org> (2025-05-29)
 # Version updated
-<sys-devel/gcc-13.3.1_p20250522-r1
+<sys-devel/gcc-11.5.0

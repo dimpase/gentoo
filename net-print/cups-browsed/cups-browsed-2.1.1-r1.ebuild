@@ -1,4 +1,4 @@
-# Copyright 2023-2025 Gentoo Authors
+# Copyright 2023-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,7 +12,7 @@ SRC_URI="https://github.com/OpenPrinting/cups-browsed/releases/download/${PV}/${
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86"
-IUSE="test zeroconf"
+IUSE="test selinux zeroconf"
 
 RDEPEND="
 	dev-libs/glib:2
@@ -23,10 +23,11 @@ RDEPEND="
 "
 DEPEND="${RDEPEND}"
 BDEPEND="
-	dev-util/gdbus-codegen
+	>=dev-util/gdbus-codegen-2.80.5-r1
 	>=sys-devel/gettext-0.18.3
 	virtual/pkgconfig
 "
+RDEPEND+=" selinux? ( sec-policy/selinux-cups )"
 
 # The tests are new since the split out of cups-filters. Actually running them
 # seems to be challenging. You need:

@@ -1,10 +1,10 @@
-# Copyright 2023-2025 Gentoo Authors
+# Copyright 2023-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 inherit distutils-r1 git-r3 optfeature shell-completion
 
 DESCRIPTION="Python based POSIX initramfs generator with TOML definitions"
@@ -18,6 +18,9 @@ PROPERTIES="test_privileged"
 
 RDEPEND="
 	app-misc/pax-utils
+	sys-apps/coreutils
+	sys-apps/kmod
+	sys-apps/util-linux
 	sys-devel/bc
 	>=dev-python/zenlib-9999[${PYTHON_USEDEP}]
 	>=dev-python/pycpio-9999[${PYTHON_USEDEP}]
@@ -36,6 +39,17 @@ BDEPEND="
 		arm64? ( app-emulation/qemu[qemu_softmmu_targets_aarch64] )
 	)
 "
+
+distutils_enable_tests unittest
+
+src_test() {
+	addwrite /dev/kvm
+	distutils-r1_src_test
+}
+
+python_test() {
+	eunittest tests/
+}
 
 python_install_all() {
 	# Call the distutils-r1_python_install_all function
@@ -67,15 +81,4 @@ pkg_postinst() {
 	optfeature "ugrd.base.plymouth support" sys-boot/plymouth
 	optfeature "ZSTD compression support" dev-python/zstandard
 
-}
-
-distutils_enable_tests unittest
-
-src_test() {
-	addwrite /dev/kvm
-	distutils-r1_src_test
-}
-
-python_test() {
-	eunittest tests/
 }

@@ -1,18 +1,22 @@
-# Copyright 2022-2025 Gentoo Authors
+# Copyright 2022-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit systemd toolchain-funcs
+VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/vsftpd.asc
+inherit systemd toolchain-funcs verify-sig
 
 DESCRIPTION="Very Secure FTP Daemon"
 HOMEPAGE="https://security.appspot.com/vsftpd.html"
-SRC_URI="https://security.appspot.com/downloads/${P}.tar.gz"
+SRC_URI="
+	https://security.appspot.com/downloads/${P}.tar.gz
+	verify-sig? ( https://security.appspot.com/downloads/${P}.tar.gz.asc )
+"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
-IUSE="pam ssl tcpd"
+KEYWORDS="~alpha amd64 arm ~arm64 ~hppa ppc ppc64 ~riscv ~s390 ~sparc x86"
+IUSE="pam selinux ssl tcpd"
 
 DEPEND="
 	>=sys-libs/libcap-2
@@ -24,7 +28,10 @@ DEPEND="
 
 RDEPEND="${DEPEND}
 	net-ftp/ftpbase
+	selinux? ( sec-policy/selinux-ftp )
 "
+
+BDEPEND="verify-sig? ( sec-keys/openpgp-keys-vsftpd )"
 
 src_prepare() {
 	local PATCHES=(

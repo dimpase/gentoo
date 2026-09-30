@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -63,14 +63,6 @@ DEPEND="${RDEPEND}
 	test? ( dev-cpp/gtest )
 "
 
-PATCHES=(
-	# unbundle 3rd libs
-	"${FILESDIR}/${PN}-4.7-unbundle-gtest.patch"
-	"${FILESDIR}/${PN}-4.7-unbundle-lame.patch"
-	"${FILESDIR}/${PN}-4.7-unbundle-pugixml.patch"
-	"${FILESDIR}/${PN}-4.7-unbundle-utfcpp.patch"
-)
-
 src_unpack() {
 	if [[ ${PV} == "9999" ]]; then
 		git-r3_src_unpack
@@ -99,7 +91,7 @@ src_prepare() {
 
 	local bundle
 	for bundle in "${rm_deps[@]}"; do
-		rm -r src/framework/"${bundle}" || die
+		rm -r muse/framework/"${bundle}" || die
 	done
 
 	cmake_src_prepare

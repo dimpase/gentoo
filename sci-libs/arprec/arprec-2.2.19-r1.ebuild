@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -15,7 +15,7 @@ S="${WORKDIR}/${PN}"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86"
 IUSE="cpu_flags_x86_fma3 cpu_flags_x86_fma4 doc fortran qd static-libs"
 
 DEPEND="qd? ( sci-libs/qd[fortran=] )"
@@ -23,6 +23,9 @@ RDEPEND="${DEPEND}"
 
 PATCHES=(
 	"${FILESDIR}"/${P}-gold.patch
+	"${FILESDIR}"/${P}-ax_cxx_fma.patch #Bug 731912
+	"${FILESDIR}"/${P}-narrowing.patch #Bug 731916
+	"${FILESDIR}"/${P}-noregister.patch #Bug 926266
 )
 
 src_prepare() {

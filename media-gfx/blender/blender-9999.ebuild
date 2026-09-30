@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2207
@@ -18,7 +18,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{12..14} )
 # NOTE must match media-libs/osl
 LLVM_COMPAT=( {20..20} )
 LLVM_OPTIONAL=1
@@ -119,7 +119,7 @@ RDEPEND="${PYTHON_DEPS}
 	media-libs/libjpeg-turbo:=
 	>=media-libs/libpng-1.6.50:=
 	media-libs/libsamplerate
-	>=media-libs/openimageio-3.0.9.1:=
+	>=media-libs/openimageio-3.0.9.1:=[python,${PYTHON_SINGLE_USEDEP}]
 	virtual/glu
 	virtual/libintl
 	virtual/opengl[X?]
@@ -132,7 +132,6 @@ RDEPEND="${PYTHON_DEPS}
 	ffmpeg? ( media-video/ffmpeg:=[encode(+),lame(-),jpeg2k?,opus,theora,vorbis,vpx,x264,xvid] )
 	fftw? ( sci-libs/fftw:3.0=[threads] )
 	gmp? ( dev-libs/gmp:=[cxx] )
-	gnome? ( gui-libs/libdecor )
 	hip? (
 		>=dev-util/hip-6.0:=
 		hiprt? (
@@ -214,7 +213,7 @@ DEPEND="${RDEPEND}
 	dev-cpp/eigen:=
 	test? (
 		$(python_gen_cond_dep '
-			media-libs/openimageio[jpeg2k,python,${PYTHON_SINGLE_USEDEP},tools]
+			media-libs/openimageio[jpeg2k,tools]
 		')
 	)
 "
@@ -256,10 +255,11 @@ BDEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}/${PN}-4.0.2-FindClang.patch"
+	"${FILESDIR}/${PN}-5.0.0-FindClang.patch"
 	"${FILESDIR}/${PN}-4.1.1-FindLLVM.patch"
 	"${FILESDIR}/${PN}-4.1.1-numpy.patch"
 	"${FILESDIR}/${PN}-4.3.2-system-glog.patch"
+	"${FILESDIR}/${PN}-5.0.0-osd-omp-link.patch"
 )
 
 blender_check_requirements() {
@@ -466,6 +466,7 @@ src_configure() {
 
 		# Compiler Options:
 		# -DWITH_BUILDINFO="yes"
+		-DWITH_COMPILER_SIMD="no" # This makes it so Blender doesn't append their own -march flags
 
 		# System Options:
 		-DWITH_INSTALL_PORTABLE="no"
@@ -606,17 +607,13 @@ src_configure() {
 	if use hip; then
 		mycmakeargs+=(
 			-DHIP_ROOT_DIR="$(hipconfig -p)"
-
-			-DHIP_HIPCC_FLAGS="-fcf-protection=none"
-
-			-DCMAKE_HIP_LINK_EXECUTABLE="$(get_llvm_prefix)/bin/clang++"
-
 			-DCYCLES_HIP_BINARIES_ARCH="$(get_amdgpu_flags)"
 		)
 
 		if use hiprt; then
 			mycmakeargs+=(
 				-DHIPRT_ROOT_DIR="${ESYSROOT}/usr/lib/hiprt/2.5"
+				-DHIP_HIPCC_FLAGS="-fcf-protection=none"
 				-DHIPRT_COMPILER_PARALLEL_JOBS="$(makeopts_jobs)"
 			)
 		fi
@@ -632,7 +629,7 @@ src_configure() {
 	if use wayland; then
 		mycmakeargs+=(
 			-DWITH_GHOST_WAYLAND_APP_ID="blender-${BV}"
-			-DWITH_GHOST_WAYLAND_LIBDECOR="$(usex gnome)"
+			-DWITH_GHOST_CSD="$(usex gnome)"
 		)
 	fi
 
@@ -650,10 +647,12 @@ src_configure() {
 		)
 	fi
 
-	if tc-is-clang || use osl; then
+	if use osl; then
 		mycmakeargs+=(
 			-DWITH_CLANG="yes"
 			-DWITH_LLVM="yes"
+			-DLLVM_ROOT="$(get_llvm_prefix)"
+			-DClang_ROOT="$(get_llvm_prefix)"
 		)
 	fi
 
@@ -748,14 +747,6 @@ src_test() {
 	local -x CMAKE_SKIP_TESTS=(
 		"^script_pyapi_bpy_driver_secure_eval$"
 	)
-
-	if [[ "${RUN_FAILING_TESTS:-0}" -eq 0 ]]; then
-		einfo "not running failing tests RUN_FAILING_TESTS=${RUN_FAILING_TESTS}"
-		CMAKE_SKIP_TESTS+=(
-			# Does try to import from weird paths
-			"^io_fbx_import$"
-		)
-	fi
 
 	if ! has_version "media-libs/openusd"; then
 		CMAKE_SKIP_TESTS+=(
@@ -904,16 +895,6 @@ pkg_postinst() {
 		ewarn "an other LLVM version than what OSL is linked to."
 		ewarn "See https://bugs.gentoo.org/880671 for more details"
 		ewarn ""
-	fi
-
-	# NOTE build_files/cmake/Modules/FindPythonLibsUnix.cmake: set(_PYTHON_VERSION_SUPPORTED 3.11)
-	if ! use python_single_target_python3_11; then
-		elog "You are building Blender with a newer python version than"
-		elog "supported by this version upstream."
-		elog "If you experience breakages with e.g. plugins, please switch to"
-		elog "PYTHON_SINGLE_TARGET: python3_11 instead."
-		elog "Bug: https://bugs.gentoo.org/737388"
-		elog
 	fi
 
 	xdg_icon_cache_update

@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,7 +7,6 @@ EAPI=8
 LUA_COMPAT=( luajit )
 
 MY_PN="lua-upstream-nginx-module"
-NGINX_MOD_S="${WORKDIR}/${MY_PN}-${PV}"
 
 NGINX_MOD_LINK_MODULES=( www-nginx/ngx-lua-module )
 
@@ -24,6 +23,8 @@ SRC_URI="
 	https://github.com/openresty/lua-upstream-nginx-module/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz
 "
 
+S="${WORKDIR}/${MY_PN}-${PV}"
+
 LICENSE="BSD-2"
 SLOT="0"
 KEYWORDS="amd64 arm64"
@@ -38,7 +39,7 @@ PATCHES=(
 )
 
 src_configure() {
-	ngx_mod_append_libs "$(lua_get_LIBS)"
+	ngx_mod_append_ldflags "$(lua_get_LIBS)"
 	append-cflags "$(lua_get_CFLAGS)"
 
 	nginx-module_src_configure

@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ SRC_URI="mirror://gnu/${PN}/${P}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm64 ~hppa ~mips ~ppc ~ppc64 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 ~arm64 ~hppa ~mips ppc ppc64 ~sparc x86 ~arm64-macos ~x64-macos ~x64-solaris"
 IUSE="nls ruby"
 
 RDEPEND="nls? ( virtual/libintl )"
@@ -28,6 +28,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-1.6.4-fsf-gcc-darwin.patch
 	"${FILESDIR}"/${PN}-1.6.2-implicit-function-decl.patch
 	"${FILESDIR}"/${PN}-1.6.6-gcc15.patch
+	"${FILESDIR}"/${PN}-1.6.6-musl.patch
 )
 
 src_prepare() {

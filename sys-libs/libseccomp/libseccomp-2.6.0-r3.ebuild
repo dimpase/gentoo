@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -6,7 +6,7 @@ EAPI=8
 DISTUTILS_EXT=1
 DISTUTILS_OPTIONAL=1
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{10..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 
 inherit distutils-r1 multilib-minimal multiprocessing
 
@@ -18,8 +18,16 @@ if [[ ${PV} == *9999 ]] ; then
 	PRERELEASE="2.6.0"
 	inherit autotools git-r3
 else
-	SRC_URI="https://github.com/seccomp/libseccomp/releases/download/v${PV}/${P}.tar.gz"
-	KEYWORDS="-* amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 x86 ~amd64-linux ~x86-linux"
+	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/libseccomp.asc
+	inherit verify-sig
+
+	SRC_URI="
+		https://github.com/seccomp/libseccomp/releases/download/v${PV}/${P}.tar.gz
+		verify-sig? ( https://github.com/seccomp/libseccomp/releases/download/v${PV}/${P}.tar.gz.asc )
+	"
+	KEYWORDS="-* amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 x86"
+
+	BDEPEND="verify-sig? ( sec-keys/openpgp-keys-libseccomp )"
 fi
 
 LICENSE="LGPL-2.1"
@@ -33,10 +41,11 @@ RDEPEND="
 "
 # We need newer kernel headers; we don't keep strict control of the exact
 # version here, just be safe and pull in the latest stable ones. bug #551248
-DEPEND="${RDEPEND}
+DEPEND="
+	${RDEPEND}
 	>=sys-kernel/linux-headers-5.15
 "
-BDEPEND="
+BDEPEND+="
 	${DEPEND}
 	dev-util/gperf
 	python? (
@@ -52,6 +61,19 @@ PATCHES=(
 	"${FILESDIR}"/${P}-aliasing.patch
 	"${FILESDIR}"/${P}-bounds.patch
 )
+
+src_unpack() {
+	if [[ ${PV} == 9999 ]] ; then
+		git-r3_src_unpack
+		return
+	fi
+
+	if use verify-sig; then
+		verify-sig_verify_detached "${DISTDIR}"/${P}.tar.gz{,.asc}
+	fi
+
+	default
+}
 
 src_prepare() {
 	default
@@ -95,7 +117,7 @@ multilib_src_compile() {
 }
 
 multilib_src_test() {
-	local -x LIBSECCOMP_TSTCFG_JOBS="$(makeopts_jobs)"
+	local -x LIBSECCOMP_TSTCFG_JOBS="$(get_makeopts_jobs)"
 	emake -Onone check
 
 	if multilib_is_native_abi && use python ; then

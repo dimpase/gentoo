@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -26,7 +26,7 @@ JAVA_PKG_WANT_SOURCE="21"
 JAVA_PKG_WANT_TARGET="21"
 
 PYTHON_REQ_USE="sqlite,ssl"
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 
 # See cmake/scripts/common/ArchSetup.cmake for available options
 CPU_FLAGS="cpu_flags_x86_sse cpu_flags_x86_sse2 cpu_flags_x86_sse3 cpu_flags_x86_sse4_1 cpu_flags_x86_sse4_2 cpu_flags_x86_avx cpu_flags_x86_avx2 cpu_flags_arm_neon"
@@ -98,7 +98,6 @@ REQUIRED_USE="
 "
 RESTRICT="!test? ( test )"
 
-# dev-libs/libcec[-cubox] bug #818262
 COMMON_DEPEND="
 	>=dev-libs/flatbuffers-23.3.3:=
 	>=dev-libs/lzo-2.04:2
@@ -155,7 +154,7 @@ COMMON_TARGET_DEPEND="${PYTHON_DEPS}
 		sys-libs/libcap
 	)
 	cec? (
-		>=dev-libs/libcec-4.0[-cubox(-)]
+		>=dev-libs/libcec-4.0:=
 	)
 	dbus? (
 		sys-apps/dbus
@@ -283,7 +282,7 @@ Please consider enabling IP_MULTICAST under Networking options.
 
 pkg_setup() {
 	check_extra_config
-	java-pkg-2_pkg_setup
+	ROOT= java-pkg-2_pkg_setup
 	python-single-r1_pkg_setup
 }
 

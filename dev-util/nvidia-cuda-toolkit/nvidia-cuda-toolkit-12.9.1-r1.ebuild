@@ -1,11 +1,11 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # shellcheck disable=SC2317
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{12..14} )
 inherit check-reqs edo toolchain-funcs
 inherit python-r1
 
@@ -30,7 +30,7 @@ LICENSE="NVIDIA-CUDA"
 SLOT="0/${PV}" # UNSLOTTED
 # SLOT="${PV}" # SLOTTED
 
-KEYWORDS="-* ~amd64 ~arm64 ~amd64-linux ~arm64-linux"
+KEYWORDS="-* ~amd64 ~arm64"
 IUSE="clang debugger examples nsight profiler rdma sanitizer"
 RESTRICT="bindist mirror strip test"
 
@@ -363,8 +363,8 @@ pkg_postinst_check() {
 			ewarn
 			ewarn "Append --ccbin= pointing to a clang bindir to the nvcc compiler flags (NVCCFLAGS)"
 			ewarn "or set NVCC_CCBIN to the same bindir."
-			ewarn "	NVCCFLAGS=\"--ccbin=$(eval echo "${EPREFIX}/usr/lib/llvm/*/bin${CLANG_MAX_VER}")\""
-			ewarn "	NVCC_CCBIN=$(eval echo "${EPREFIX}/usr/lib/llvm/*/bin${CLANG_MAX_VER}")"
+			ewarn "	NVCCFLAGS=\"--ccbin=$(eval echo "${EPREFIX}/usr/lib/llvm/${CLANG_MAX_VER}/bin")\""
+			ewarn "	NVCC_CCBIN=$(eval echo "${EPREFIX}/usr/lib/llvm/${CLANG_MAX_VER}/bin")"
 			ewarn
 		fi
 	fi

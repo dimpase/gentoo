@@ -1,19 +1,28 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 FORTRAN_NEEDED=fortran
 
-inherit fortran-2
+inherit autotools fortran-2
 
 DESCRIPTION="Quad-double and double-double float arithmetics"
 HOMEPAGE="https://www.davidhbailey.com/dhbsoftware/"
 SRC_URI="https://www.davidhbailey.com/dhbsoftware/${P}.tar.gz"
 LICENSE="LBNLBSD"
 SLOT="0"
-KEYWORDS="amd64 ~riscv ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~riscv ~x86"
 IUSE="cpu_flags_x86_fma3 cpu_flags_x86_fma4 doc fortran"
+
+PATCHES=(
+	"${FILESDIR}"/${P}-pkgconfig.patch
+)
+
+src_prepare() {
+	default
+	eautoreconf
+}
 
 src_configure() {
 	econf \
@@ -24,6 +33,10 @@ src_configure() {
 		--enable-inline \
 		$(use_enable cpu_flags_x86_fma$(usex cpu_flags_x86_fma3 3 4) fma) \
 		$(use_enable fortran)
+	sed -i \
+		-e '/FCLIBS/s| -L[^ ]*||g' \
+		fortran/Makefile \
+		|| die
 }
 
 src_install() {

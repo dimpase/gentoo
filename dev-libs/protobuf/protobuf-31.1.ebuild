@@ -1,9 +1,9 @@
-# Copyright 2008-2025 Gentoo Authors
+# Copyright 2008-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake-multilib dot-a elisp-common flag-o-matic multilib
+inherit cmake-multilib dot-a elisp-common flag-o-matic multilib toolchain-funcs
 
 # NOTE from https://github.com/protocolbuffers/protobuf/blob/main/cmake/dependencies.cmake
 ABSEIL_MIN_VER="20250127.0"
@@ -16,7 +16,7 @@ if [[ "${PV}" == *9999 ]]; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/protocolbuffers/protobuf/releases/download/v${PV}/${P}.tar.gz"
-	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos"
+	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos"
 	SLOT="0/$(ver_cut 1-2).0"
 fi
 
@@ -154,7 +154,7 @@ multilib_src_install_all() {
 	use libupb && strip-lto-bytecode
 	find "${ED}" -name "*.la" -delete || die
 
-	if [[ ! -f "${ED}/usr/$(get_libdir)/libprotobuf$(get_libname "${SLOT#*/}")" ]]; then
+	if ! tc-is-cross-compiler && [[ ! -f "${ED}/usr/$(get_libdir)/libprotobuf$(get_libname "${SLOT#*/}")" ]]; then
 		eerror "No matching library found with SLOT variable, currently set: ${SLOT}\n" \
 			"Expected value: ${ED}/usr/$(get_libdir)/libprotobuf$(get_libname "${SLOT#*/}")"
 		die "Please update SLOT variable"

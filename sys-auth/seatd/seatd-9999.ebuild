@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Gentoo Authors
+# Copyright 2020-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -16,7 +16,7 @@ else
 fi
 LICENSE="MIT"
 SLOT="0/1"
-IUSE="builtin elogind server systemd"
+IUSE="builtin elogind selinux server systemd"
 REQUIRED_USE="?? ( elogind systemd )"
 
 DEPEND="
@@ -25,8 +25,18 @@ DEPEND="
 "
 RDEPEND="${DEPEND}
 	server? ( acct-group/seat )
+	selinux? ( sec-policy/selinux-seatd )
 "
 BDEPEND=">=app-text/scdoc-1.9.7"
+
+src_prepare() {
+	# -fhardened conflicts with user setting -mindirect-branch=thunk
+	# https://codeberg.org/gentoo/gentoo/pulls/208#issuecomment-11187149
+	# Also means no longer redefining Gentoo's _FORTIFY_SOURCE
+	sed -i '/-fhardened/d' meson.build || die
+
+	default
+}
 
 src_configure() {
 	local emesonargs=(

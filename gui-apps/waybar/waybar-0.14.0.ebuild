@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit meson optfeature
+inherit meson optfeature toolchain-funcs
 
 DESCRIPTION="Highly customizable Wayland bar for Sway and Wlroots based compositors"
 HOMEPAGE="https://github.com/Alexays/Waybar"
@@ -13,7 +13,7 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/Alexays/${PN^}.git"
 else
 	SRC_URI="https://github.com/Alexays/${PN^}/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm64"
+	KEYWORDS="amd64 ~arm64"
 	S="${WORKDIR}/${PN^}-${PV}"
 fi
 
@@ -29,7 +29,7 @@ RESTRICT="!test? ( test )"
 
 BDEPEND="
 	>=app-text/scdoc-1.9.2
-	dev-util/gdbus-codegen
+	>=dev-util/gdbus-codegen-2.80.5-r1
 	dev-util/wayland-scanner
 	virtual/pkgconfig
 "
@@ -53,8 +53,8 @@ RDEPEND="
 	jack? ( virtual/jack )
 	libinput? ( dev-libs/libinput:= )
 	logind? (
-		|| ( sys-apps/systemd
-			 sys-auth/elogind )
+		systemd? ( sys-apps/systemd )
+		!systemd? ( sys-auth/elogind )
 	)
 	mpd? ( media-libs/libmpdclient )
 	mpris? ( >=media-sound/playerctl-2 )
@@ -75,9 +75,20 @@ DEPEND="${RDEPEND}
 	dev-libs/wayland-protocols
 	test? ( dev-cpp/catch:0 )
 "
+PATCHES=(
+	"${FILESDIR}"/meson-fix-build.patch
+)
 
 src_configure() {
+	local cxx_stdlib=$(tc-get-cxx-stdlib)
+	einfo "C++ standard library: ${cxx_stdlib:-unknown}"
+	local libcxx=false
+	if [[ ${cxx_stdlib} == libc++ ]]; then
+		libcxx=true
+	fi
+
 	local emesonargs=(
+		-Dlibcxx=${libcxx}
 		-Dman-pages=enabled
 		-Dcava=disabled # depends on LukashonakV/cava fork, but media-sound/cava is karlstav/cava
 		$(meson_feature evdev libevdev)

@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..14} )
+PYTHON_COMPAT=( python3_{11..15} )
 
 inherit edo flag-o-matic multiprocessing python-any-r1 toolchain-funcs xdg
 
@@ -11,11 +11,19 @@ DESCRIPTION="Open-source, GPL-licensed, multiplatform, multithreaded video trans
 HOMEPAGE="https://handbrake.fr/ https://github.com/HandBrake/HandBrake"
 
 if [[ ${PV} == *9999* ]]; then
-	EGIT_REPO_URI="https://github.com/HandBrake/HandBrake.git"
 	inherit git-r3
+	EGIT_REPO_URI="https://github.com/HandBrake/HandBrake.git"
 else
+	inherit verify-sig
 	MY_P="HandBrake-${PV}"
-	SRC_URI="https://github.com/HandBrake/HandBrake/releases/download/${PV}/${MY_P}-source.tar.bz2 -> ${P}.tar.bz2"
+	SRC_URI="
+		https://github.com/HandBrake/HandBrake/releases/download/${PV}/${MY_P}-source.tar.bz2
+			-> ${P}.tar.bz2
+		verify-sig? (
+			https://github.com/HandBrake/HandBrake/releases/download/${PV}/${MY_P}-source.tar.bz2.sig
+				-> ${P}.tar.bz2.sig
+		)
+	"
 	S="${WORKDIR}/${MY_P}"
 	KEYWORDS="~amd64 ~arm64 ~x86"
 fi
@@ -25,22 +33,27 @@ declare -A BUNDLED=(
 	# Heavily patched in an incompatible way.
 	# Issues related to using system ffmpeg historically.
 	# See bug #829595 and #922828
-	[ffmpeg]="https://github.com/HandBrake/HandBrake-contribs/releases/download/contribs2/ffmpeg-8.0.tar.bz2;"
+	[ffmpeg]="https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.bz2;"
 	# Patched in an incompatible way
-	[x265]="https://github.com/HandBrake/HandBrake-contribs/releases/download/contribs2/x265-snapshot-20250729-13276.tar.gz;x265"
-	[x265_8bit]="https://github.com/HandBrake/HandBrake-contribs/releases/download/contribs2/x265-snapshot-20250729-13276.tar.gz;x265"
-	[x265_10bit]="https://github.com/HandBrake/HandBrake-contribs/releases/download/contribs2/x265-snapshot-20250729-13276.tar.gz;x265"
-	[x265_12bit]="https://github.com/HandBrake/HandBrake-contribs/releases/download/contribs2/x265-snapshot-20250729-13276.tar.gz;x265"
+	[x265]="https://github.com/Multicorewareinc/x265/releases/download/4.3/x265_4.3.tar.gz;x265"
+	[x265_8bit]="https://github.com/Multicorewareinc/x265/releases/download/4.3/x265_4.3.tar.gz;x265"
+	[x265_10bit]="https://github.com/Multicorewareinc/x265/releases/download/4.3/x265_4.3.tar.gz;x265"
+	[x265_12bit]="https://github.com/Multicorewareinc/x265/releases/download/4.3/x265_4.3.tar.gz;x265"
 )
 
 bundle_src_uri() {
+	local name
 	for name in "${!BUNDLED[@]}"; do
-		IFS=$';' read -r uri use <<< ${BUNDLED[${name}]}
-		local tarball=${uri##*/}
+		local OLDIFS splitted tarball uri use
+		OLDIFS=$IFS; IFS=';'; splitted=( ${BUNDLED[${name}]} ); IFS=$OLDIFS
+		uri=${splitted[0]}
+		use=${splitted[1]}
+
+		tarball=${uri##*/}
 		if [[ -n ${use} ]]; then
-			SRC_URI+=" ${use}? ( ${uri} -> handbrake-${tarball} )"
+			SRC_URI+=" ${use}? ( ${uri} )"
 		else
-			SRC_URI+=" ${uri} -> handbrake-${tarball}"
+			SRC_URI+=" ${uri}"
 		fi
 	done
 }
@@ -49,9 +62,12 @@ bundle_src_uri
 
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="amf +fdk gui libdovi numa nvenc qsv x265"
+IUSE="amf +fdk gui libdovi numa nvdec nvenc qsv vaapi x265"
 
-REQUIRED_USE="numa? ( x265 )"
+REQUIRED_USE="
+	numa? ( x265 )
+	nvdec? ( nvenc )
+"
 
 # >=media-libs/libvpl-1.13.0: bug #957811 (check libhb/qsvcommon.h for new platform codenames)
 COMMON_DEPEND="
@@ -69,7 +85,7 @@ COMMON_DEPEND="
 	>=media-libs/libvpx-1.12.0:=
 	media-libs/opus
 	>=media-libs/speex-1.2.1
-	>=media-libs/svt-av1-3.0.0:=
+	>=media-libs/svt-av1-4.0.0:=
 	>=media-libs/x264-0.0.20220222:=
 	>=media-libs/zimg-3.0.4
 	media-sound/lame
@@ -89,6 +105,11 @@ COMMON_DEPEND="
 		media-libs/libva:=
 		>=media-libs/libvpl-1.13.0:=
 	)
+	vaapi? (
+		media-libs/libva:=[X]
+		x11-libs/libX11
+		x11-libs/libdrm
+	)
 "
 RDEPEND="
 	${COMMON_DEPEND}
@@ -96,7 +117,7 @@ RDEPEND="
 "
 DEPEND="
 	${COMMON_DEPEND}
-	amf? ( >=media-libs/amf-headers-1.4.36-r1 )
+	amf? ( >=media-libs/amf-headers-1.5.2 )
 "
 # cmake needed for custom script: bug #852701
 BDEPEND="
@@ -107,12 +128,17 @@ BDEPEND="
 		dev-build/meson
 		sys-devel/gettext
 	)
+	nvdec? ( llvm-core/clang:*[llvm_targets_NVPTX] )
 "
+if [[ ${PV} != 9999 ]]; then
+	BDEPEND+=" verify-sig? ( >=sec-keys/openpgp-keys-handbrake-20260311 )"
+	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/handbrake.asc
+fi
 
 PATCHES=(
 	"${FILESDIR}"/handbrake-1.9.0-link-libdovi-properly.patch
 	"${FILESDIR}"/handbrake-1.9.0-include-vpl-properly.patch
-	"${FILESDIR}"/handbrake-1.9.2-set-ffmpeg-toolchain-explicitly.patch
+	"${FILESDIR}"/handbrake-1.12.0-set-ffmpeg-toolchain-explicitly.patch
 	"${FILESDIR}"/handbrake-1.9.2-allow-overriding-tools-via-env.patch
 )
 
@@ -120,6 +146,7 @@ src_unpack() {
 	if [[ ${PV} == 9999 ]]; then
 		git-r3_src_unpack
 	else
+		use verify-sig && verify-sig_verify_detached "${DISTDIR}"/${P}.tar.bz2{,.sig}
 		unpack ${P}.tar.bz2
 	fi
 }
@@ -134,7 +161,7 @@ src_prepare() {
 		if [[ -n ${use} ]]; then
 			use ${use} || continue
 		fi
-		cp "${DISTDIR}/handbrake-${tarball}" download/${tarball} || die
+		cp "${DISTDIR}/${tarball}" download/${tarball} || die
 	done
 
 	# Get rid of leftover bundled library build definitions
@@ -168,14 +195,19 @@ src_configure() {
 		--prefix="${EPREFIX}/usr"
 		--disable-flatpak
 		--no-harden #bug #890279
+		--optimize=none
+		--cpu=none
+		--lto=none
 		$(use_enable amf vce)
 		$(use_enable fdk fdk-aac)
 		$(use_enable gui gtk)
 		$(use_enable libdovi)
 		$(use_enable numa)
+		$(use_enable nvdec)
 		$(use_enable nvenc)
-		$(use_enable x265)
 		$(use_enable qsv)
+		$(use_enable vaapi)
+		$(use_enable x265)
 	)
 
 	edo ./configure ${myconfargs[@]}

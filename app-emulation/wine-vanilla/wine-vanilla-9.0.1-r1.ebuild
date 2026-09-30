@@ -1,4 +1,4 @@
-# Copyright 2022-2025 Gentoo Authors
+# Copyright 2022-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -27,11 +27,10 @@ HOMEPAGE="
 LICENSE="LGPL-2.1+ BSD-2 IJG MIT OPENLDAP ZLIB gsm libpng2 libtiff"
 SLOT="${PV}"
 IUSE="
-	+X +alsa capi cups +dbus dos llvm-libunwind +fontconfig +gecko
-	gphoto2 +gstreamer kerberos +mono netapi nls odbc opencl +opengl
-	pcap perl pulseaudio samba scanner +sdl selinux smartcard +ssl
-	+truetype udev +unwind usb v4l +vulkan wayland +xcomposite
-	xinerama
+	+X +alsa cups +dbus dos llvm-libunwind +fontconfig +gecko gphoto2
+	+gstreamer kerberos +mono netapi nls odbc opencl +opengl pcap perl
+	pulseaudio samba scanner +sdl selinux smartcard +ssl +truetype udev
+	+unwind usb v4l +vulkan wayland +xcomposite xinerama
 "
 # wrt opengl, wine-9 did not support EGL with wayland yet, use 10+
 REQUIRED_USE="
@@ -75,7 +74,6 @@ WINE_COMMON_DEPEND="
 		x11-libs/libXext[${WINE_USEDEP}]
 	)
 	alsa? ( media-libs/alsa-lib[${WINE_USEDEP}] )
-	capi? ( net-libs/libcapi:=[${WINE_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${WINE_USEDEP}] )
 	gstreamer? (
 		dev-libs/glib:2[${WINE_USEDEP}]
@@ -124,6 +122,7 @@ DEPEND="
 	${WINE_COMMON_DEPEND}
 	sys-kernel/linux-headers
 	X? ( x11-base/xorg-proto )
+	opencl? ( dev-util/opencl-headers )
 "
 BDEPEND="
 	sys-devel/bison
@@ -154,7 +153,7 @@ src_configure() {
 
 		$(use_with X x)
 		$(use_with alsa)
-		$(use_with capi)
+		--without-capi #977907
 		$(use_with cups)
 		$(use_with dbus)
 		$(use_with fontconfig)

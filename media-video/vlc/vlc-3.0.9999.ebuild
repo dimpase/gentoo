@@ -1,4 +1,4 @@
-# Copyright 2000-2025 Gentoo Authors
+# Copyright 2000-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -37,14 +37,14 @@ HOMEPAGE="https://www.videolan.org/vlc/"
 LICENSE="LGPL-2.1 GPL-2"
 SLOT="0/5-9" # vlc - vlccore
 
-IUSE="a52 alsa aom archive aribsub bidi bluray cddb chromaprint chromecast dav1d dbus
-	dc1394 debug directx dts +dvbpsi dvd +encode faad fdk +ffmpeg flac fluidsynth
+IUSE="alsa aom archive aribsub bidi bluray chromaprint chromecast dav1d dbus
+	dc1394 debug directx +dvbpsi dvd +encode faad fdk +ffmpeg flac fluidsynth
 	fontconfig +gcrypt gme keyring gstreamer +gui ieee1394 jack jpeg kate
 	libass libcaca libnotify +libsamplerate libtiger linsys lirc live lua
-	macosx-notifications mad matroska modplug mp3 mpeg mtp musepack ncurses nfs ogg
-	omxil optimisememory opus png projectm pulseaudio run-as-root samba sdl-image
+	mad matroska modplug mp3 mtp musepack ncurses nfs ogg
+	omxil optimisememory opus png projectm pulseaudio run-as-root samba selinux
 	sftp shout sid skins soxr speex srt ssl svg taglib theora tremor truetype twolame
-	udev upnp vaapi v4l vdpau vnc vpx wayland +X x264 x265 xml zeroconf zvbi
+	udev upnp vaapi v4l vdpau vnc qsv vpx wayland +X x264 x265 xml zeroconf zvbi
 	cpu_flags_arm_neon cpu_flags_ppc_altivec cpu_flags_x86_mmx cpu_flags_x86_sse
 "
 REQUIRED_USE="
@@ -61,6 +61,7 @@ REQUIRED_USE="
 "
 # live+snapshots need bison+flex
 BDEPEND="
+	dev-build/autoconf-archive
 	sys-devel/bison
 	sys-devel/flex
 	>=sys-devel/gettext-0.19.8
@@ -74,10 +75,10 @@ BDEPEND="
 RDEPEND="
 	media-libs/libvorbis
 	net-dns/libidn:=
+	net-libs/librist
 	virtual/zlib:=
 	virtual/libintl
 	virtual/opengl
-	a52? ( media-libs/a52dec )
 	alsa? ( media-libs/alsa-lib )
 	aom? ( media-libs/libaom:= )
 	archive? ( app-arch/libarchive:= )
@@ -89,7 +90,6 @@ RDEPEND="
 		virtual/ttf-fonts
 	)
 	bluray? ( >=media-libs/libbluray-1.3.0:= )
-	cddb? ( media-libs/libcddb )
 	chromaprint? ( media-libs/chromaprint:= )
 	chromecast? (
 		dev-cpp/abseil-cpp:=
@@ -102,7 +102,6 @@ RDEPEND="
 		media-libs/libdc1394:2
 		sys-libs/libraw1394
 	)
-	dts? ( media-libs/libdca )
 	dvbpsi? ( >=media-libs/libdvbpsi-1.2.0:= )
 	dvd? (
 		>=media-libs/libdvdnav-6.1.1:=
@@ -125,12 +124,11 @@ RDEPEND="
 	keyring? ( app-crypt/libsecret )
 	gstreamer? ( >=media-libs/gst-plugins-base-1.4.5:1.0 )
 	gui? (
-		dev-qt/qtcore:5
-		dev-qt/qtgui:5
-		dev-qt/qtsvg:5
-		dev-qt/qtwidgets:5
+		dev-qt/qtbase:6[gui,opengl,widgets]
+		dev-qt/qtdeclarative:6
+		dev-qt/qtsvg:6
 		X? (
-			dev-qt/qtx11extras:5
+			dev-qt/qtbase:6=[X]
 			x11-libs/libX11
 		)
 	)
@@ -165,7 +163,6 @@ RDEPEND="
 	)
 	modplug? ( >=media-libs/libmodplug-0.8.9.0 )
 	mp3? ( media-sound/mpg123-base )
-	mpeg? ( media-libs/libmpeg2 )
 	mtp? ( media-libs/libmtp:= )
 	musepack? ( media-sound/musepack-tools )
 	ncurses? ( sys-libs/ncurses:=[unicode(+)] )
@@ -178,8 +175,8 @@ RDEPEND="
 		>=media-libs/libprojectm-3.1.12:0=
 	)
 	pulseaudio? ( media-libs/libpulse )
+	qsv? ( media-libs/libvpl:= )
 	samba? ( >=net-fs/samba-4.0.0:0[client,-debug(-)] )
-	sdl-image? ( media-libs/sdl-image )
 	sftp? ( net-libs/libssh2 )
 	shout? ( media-libs/libshout )
 	sid? ( media-libs/libsidplay:2 )
@@ -234,6 +231,7 @@ RDEPEND="
 DEPEND="${RDEPEND}
 	X? ( x11-base/xorg-proto )
 "
+RDEPEND+=" selinux? ( sec-policy/selinux-mplayer )"
 
 DOCS=( AUTHORS THANKS NEWS README doc/fortunes.txt )
 
@@ -244,9 +242,6 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-3.0.6-fdk-aac-2.0.0.patch # bug 672290
 	"${FILESDIR}"/${PN}-3.0.11.1-configure_lua_version.patch
 	"${FILESDIR}"/${PN}-3.0.18-drop-minizip-dep.patch
-	# bug 961436
-	"${FILESDIR}"/${P}-ffmpeg8-1.patch # upstream git master backport
-	"${FILESDIR}"/${P}-ffmpeg8-2.patch # downstream
 )
 
 pkg_setup() {
@@ -266,6 +261,9 @@ src_prepare() {
 		./bootstrap
 	fi
 
+	# Disable Qt5
+	sed -i 's/Qt5Svg/Qt5Svg Qt5DisableDetection/' configure.ac || die
+
 	# Make it build with libtool 1.5
 	rm m4/lt* m4/libtool.m4 || die
 
@@ -276,6 +274,13 @@ src_prepare() {
 	if ! use dbus ; then
 		sed -i 's/ --started-from-file//' share/vlc.desktop.in || die
 	fi
+
+	local CXXSTD="17"
+	if has_version ">=dev-cpp/abseil-cpp-20260107.0"; then
+		# needs >=c++20
+		CXXSTD="20"
+	fi
+	sed -i -e "/AX_CXX_COMPILE_STDCXX/{s/_[0-9]*(/(${CXXSTD}, /}" configure.ac || die
 
 	eautoreconf
 }
@@ -299,7 +304,6 @@ src_configure() {
 		--enable-vcd
 		--enable-vlc
 		--enable-vorbis
-		$(use_enable a52) # not officially supported anymore (avcodec takes priority)
 		$(use_enable alsa)
 		$(use_enable aom)
 		$(use_enable archive)
@@ -307,7 +311,6 @@ src_configure() {
 		$(use_enable bidi fribidi)
 		$(use_enable bidi harfbuzz)
 		$(use_enable bluray)
-		$(use_enable cddb libcddb)
 		$(use_enable chromaprint)
 		$(use_enable chromecast)
 		$(use_enable chromecast microdns)
@@ -323,7 +326,6 @@ src_configure() {
 		$(use_enable directx)
 		$(use_enable directx d3d11va)
 		$(use_enable directx dxva2)
-		$(use_enable dts dca) # not officially supported anymore (avcodec takes priority)
 		$(use_enable dvbpsi)
 		$(use_enable dvd dvdnav)
 		$(use_enable dvd dvdread)
@@ -355,12 +357,10 @@ src_configure() {
 		$(use_enable lirc)
 		$(use_enable live live555)
 		$(use_enable lua)
-		$(use_enable macosx-notifications osx-notifications)
 		$(use_enable mad)
 		$(use_enable matroska)
 		$(use_enable modplug mod)
 		$(use_enable mp3 mpg123)
-		$(use_enable mpeg libmpeg2) # not officially supported anymore (avcodec takes priority)
 		$(use_enable mtp)
 		$(use_enable musepack mpc)
 		$(use_enable ncurses)
@@ -375,7 +375,6 @@ src_configure() {
 		$(use_enable pulseaudio pulse)
 		$(use_enable run-as-root)
 		$(use_enable samba smbclient)
-		$(use_enable sdl-image)
 		$(use_enable sftp)
 		$(use_enable shout)
 		$(use_enable sid)
@@ -396,6 +395,7 @@ src_configure() {
 		$(use_enable vaapi libva)
 		$(use_enable vdpau)
 		$(use_enable vnc)
+		$(use_enable qsv vpl)
 		$(use_enable vpx)
 		$(use_enable wayland)
 		$(use_with X x)
@@ -409,25 +409,30 @@ src_configure() {
 		$(use_enable zvbi)
 		$(use_enable !zvbi telx)
 		--with-kde-solid="${EPREFIX}"/usr/share/solid/actions
+		--disable-a52 # not officially supported anymore (avcodec takes priority)
 		--disable-asdcp
 		--disable-coverage
 		--disable-cprof
 		--disable-crystalhd
 		--disable-decklink
+		--disable-dca # not officially supported anymore (avcodec takes priority)
 		--disable-gles2
 		--disable-goom
 		--disable-kai
 		--disable-kva
+		--disable-libcddb # not officially supported anymore
+		--disable-libmpeg2 # not officially supported anymore (avcodec takes priority)
 		--disable-libplacebo
 		--disable-maintainer-mode
 		--disable-merge-ffmpeg
-		--disable-mfx
 		--disable-mmal
+		--disable-openapv
 		--disable-opencv
 		--disable-opensles
 		--disable-oss
+		--disable-osx-notifications # MacOS only
 		--disable-rpi-omxil
-		--disable-schroedinger
+		--disable-sdl-image # not officially supported anymore
 		--disable-shine
 		--disable-sndio
 		--disable-spatialaudio
@@ -490,6 +495,18 @@ src_test() {
 src_install() {
 	default
 	find "${ED}" -name '*.la' -delete || die
+
+	if ! use gui; then
+		rm "${ED}"/usr/share/applications/*desktop || die
+	fi
+}
+
+pkg_preinst() {
+	if use gui && has_version ">=${CATEGORY}/${PN}-4[gui]"; then
+		ewarn "Downgrade from VLC-4 detected. If you experience runtime issues,"
+		ewarn "try cleaning up ~/.config/vlc first."
+	fi
+	xdg_pkg_preinst
 }
 
 pkg_postinst() {
@@ -502,7 +519,7 @@ pkg_postinst() {
 		ewarn "If you do not do it, vlc will take a long time to load."
 	fi
 
-	xdg_pkg_postinst
+	use gui && xdg_pkg_postinst
 }
 
 pkg_postrm() {
@@ -510,5 +527,5 @@ pkg_postrm() {
 		rm "${EROOT}"/usr/$(get_libdir)/vlc/plugins/plugins.dat || die "Failed to rm plugins.dat"
 	fi
 
-	xdg_pkg_postrm
+	use gui && xdg_pkg_postrm
 }

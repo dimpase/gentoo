@@ -1,4 +1,4 @@
-# Copyright 2024-2025 Gentoo Authors
+# Copyright 2024-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -22,12 +22,12 @@ LICENSE="MIT"
 # Vendored licenses
 LICENSE+=" Apache-2.0 BSD MIT"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="amd64 arm64 ~ppc64 ~riscv ~x86"
 
-IUSE="test"
+IUSE="test selinux"
 
-PROPERTIES="test_privileged"
 RESTRICT="!test? ( test ) test"
+PROPERTIES="test_privileged"
 
 RDEPEND="dev-libs/openssl:="
 DEPEND="${RDEPEND}"
@@ -36,6 +36,7 @@ BDEPEND="
 	test? ( sys-fs/fuse:0 )
 	verify-sig? ( sec-keys/openpgp-keys-gocryptfs )
 "
+RDEPEND+=" selinux? ( sec-policy/selinux-cryfs )"
 
 src_unpack() {
 	if use verify-sig; then

@@ -1,4 +1,4 @@
-# Copyright 2024-2025 Gentoo Authors
+# Copyright 2024-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -13,7 +13,7 @@ S=${WORKDIR}/${PN}-src-${PV}
 
 LICENSE="|| ( LGPL-2.1 LGPL-3 ) Boost-1.0 BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~x86"
+KEYWORDS="amd64 ~arm ~x86"
 IUSE="doc test"
 RESTRICT="!test? ( test )"
 
@@ -65,7 +65,7 @@ src_prepare() {
 	# test fails to build with Qt 6.10.1 since [1] and, given skipping
 	# this test either way, may as well also not build it for now
 	# [1] https://github.com/qt/qtbase/commit/7196bb00ed7
-	sed -i '/add_subdirectory(language)/d' tests/auto/CMakeLists.txt || die
+	cmake_comment_add_subdirectory -f tests/auto language
 }
 
 src_configure() {

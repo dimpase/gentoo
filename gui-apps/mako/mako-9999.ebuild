@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,7 +12,9 @@ if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/emersion/${PN}.git"
 else
-	SRC_URI="https://github.com/emersion/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
+	inherit verify-sig
+	SRC_URI="https://github.com/emersion/${PN}/releases/download/v${PV}/${P}.tar.gz
+		https://github.com/emersion/${PN}/releases/download/v${PV}/${P}.tar.gz.sig"
 	KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 fi
 
@@ -22,6 +24,7 @@ IUSE="elogind +icons systemd"
 
 RDEPEND="
 	dev-libs/wayland
+	sys-apps/dbus
 	x11-libs/pango
 	x11-libs/cairo
 	|| (
@@ -29,13 +32,9 @@ RDEPEND="
 		elogind? ( sys-auth/elogind )
 		sys-libs/basu
 	)
-	sys-apps/dbus
-	icons? (
-		x11-libs/gdk-pixbuf
-	)
+	icons? ( x11-libs/gdk-pixbuf:2 )
 "
-DEPEND="
-	${RDEPEND}
+DEPEND="${RDEPEND}
 	>=dev-libs/wayland-protocols-1.32
 "
 BDEPEND="
@@ -43,6 +42,11 @@ BDEPEND="
 	dev-util/wayland-scanner
 	virtual/pkgconfig
 "
+
+if [[ ${PV} != 9999 ]]; then
+	BDEPEND+=" verify-sig? ( sec-keys/openpgp-keys-emersion )"
+	VERIFY_SIG_OPENPGP_KEY_PATH="/usr/share/openpgp-keys/emersion.asc"
+fi
 
 src_configure() {
 	local emesonargs=(
@@ -67,4 +71,7 @@ src_install() {
 	meson_src_install
 
 	systemd_douserunit contrib/systemd/mako.service
+
+	exeinto /etc/user/init.d
+	newexe contrib/openrc-user.init mako
 }

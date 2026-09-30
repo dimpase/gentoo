@@ -1,8 +1,16 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # Unmask the flag which corresponds to ARCH.
 -s390
+
+# Michael Orlitzky <mjo@gentoo.org> (2026-07-14)
+# dev-lang/php:8.5 needs new keywords, bug 977138.
+php_targets_php8-5
+
+# Ian Jordan <immoloism@gmail.com> (2025-04-13)
+# sys-kernel/ugrd is not keyworded here.
+ugrd
 
 # Sam James <sam@gentoo.org> (2025-08-31)
 # GPU-related USE flags.  While hardware with PCIe host
@@ -96,7 +104,6 @@ lirc
 llvm
 java
 hardened
-qt5
 qt6
 
 # Needs java

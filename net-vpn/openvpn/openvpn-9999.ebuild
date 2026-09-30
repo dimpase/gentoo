@@ -1,18 +1,24 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools systemd linux-info tmpfiles
+inherit autotools dot-a systemd linux-info tmpfiles toolchain-funcs
 
 DESCRIPTION="Robust and highly flexible tunneling application compatible with many OSes"
-HOMEPAGE="https://openvpn.net"
+HOMEPAGE="https://community.openvpn.net/ https://openvpn.net"
 
 if [[ ${PV} == "9999" ]]; then
 	EGIT_REPO_URI="https://github.com/OpenVPN/${PN}.git"
 	inherit git-r3
 else
-	SRC_URI="https://build.openvpn.net/downloads/releases/${P}.tar.gz"
+	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/openvpn.asc
+	inherit verify-sig
+
+	SRC_URI="
+		https://build.openvpn.net/downloads/releases/${P}.tar.gz
+		verify-sig? ( https://build.openvpn.net/downloads/releases/${P}.tar.gz.asc )
+	"
 	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
 fi
 
@@ -37,10 +43,11 @@ COMMON_DEPEND="
 	)
 	lz4? ( app-arch/lz4 )
 	lzo? ( >=dev-libs/lzo-1.07 )
-	mbedtls? ( net-libs/mbedtls:0= )
+	mbedtls? ( net-libs/mbedtls:3= )
 	openssl? ( >=dev-libs/openssl-1.0.2:0= )
 	pam? ( sys-libs/pam )
 	pkcs11? ( >=dev-libs/pkcs11-helper-1.11 )
+	selinux? ( sys-libs/libselinux )
 	systemd? ( sys-apps/systemd )
 	dco? ( >=net-vpn/ovpn-dco-0.2 >=dev-libs/libnl-3.2.29:= )
 	sys-libs/libcap-ng:=
@@ -63,7 +70,13 @@ RDEPEND="
 
 if [[ ${PV} = "9999" ]]; then
 	BDEPEND+=" dev-python/docutils"
+else
+	BDEPEND+=" verify-sig? ( sec-keys/openpgp-keys-openvpn )"
 fi
+
+PATCHES=(
+	"${FILESDIR}"/${PN}-2.6.17-tests-no-lto.patch
+)
 
 pkg_setup() {
 	local CONFIG_CHECK="~TUN"
@@ -79,10 +92,19 @@ src_prepare() {
 src_configure() {
 	local -a myeconfargs
 
+	# See tests-no-lto.patch (done unconditionally to not have the build
+	# vary with and without tests)
+	lto-guarantee-fat
+
+	local MBEDTLS_CFLAGS
+	local MBEDTLS_LIBS
 	if ! use mbedtls; then
 		myeconfargs+=(
 			$(use_enable pkcs11)
 		)
+	else
+		MBEDTLS_CFLAGS="$($(tc-getPKG_CONFIG) --cflags mbedtls-3 mbedcrypto-3 mbedx509-3)"
+		MBEDTLS_LIBS="$($(tc-getPKG_CONFIG) --libs mbedtls-3 mbedcrypto-3 mbedx509-3)"
 	fi
 
 	myeconfargs+=(
@@ -94,6 +116,7 @@ src_configure() {
 		$(use_enable iproute2)
 		$(use_enable pam plugin-auth-pam)
 		$(use_enable down-root plugin-down-root)
+		$(use_enable selinux)
 		$(use_enable systemd)
 		$(use_enable dco)
 	)
@@ -101,6 +124,8 @@ src_configure() {
 	SYSTEMD_UNIT_DIR=$(systemd_get_systemunitdir) \
 		TMPFILES_DIR="/usr/lib/tmpfiles.d" \
 		IPROUTE=$(usex iproute2 '/bin/ip' '') \
+		MBEDTLS_CFLAGS="${MBEDTLS_CFLAGS}" \
+		MBEDTLS_LIBS="${MBEDTLS_LIBS}" \
 		econf "${myeconfargs[@]}"
 }
 
@@ -144,6 +169,9 @@ src_install() {
 
 	# https://bugs.gentoo.org/755680#c3
 	doman doc/openvpn.8
+
+	# https://github.com/OpenVPN/openvpn/issues/482 (bug #857648)
+	newtmpfiles distro/systemd/tmpfiles-openvpn.conf openvpn.conf
 }
 
 pkg_postinst() {

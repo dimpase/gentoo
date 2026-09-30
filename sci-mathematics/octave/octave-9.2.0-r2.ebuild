@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ SRC_URI="mirror://gnu/${PN}/${P}.tar.xz"
 
 LICENSE="GPL-3"
 SLOT="0/${PV}"
-KEYWORDS="amd64 arm arm64 ~hppa ~ppc ~ppc64 ~riscv ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 arm arm64 ~hppa ~ppc ~ppc64 ~riscv ~x86"
 
 IUSE="curl doc fftw +glpk gnuplot gui hdf5 imagemagick java json klu portaudio postscript +qhull +qrupdate readline sndfile +sparse spqr ssl sundials zlib"
 
@@ -104,6 +104,7 @@ BDEPEND="
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-5.1.0-pkgbuilddir.patch
+	"${FILESDIR}"/${PN}-9.2.0-fix-qt-help-generator-for-texinfo-7.3.patch
 )
 
 src_prepare() {
@@ -181,11 +182,11 @@ src_configure() {
 
 	# Tell autoconf where to find qt binaries, fix bug #837752
 	if use gui ; then
-		export MOC="$(qt6_get_bindir)/../libexec/moc" \
-			UIC="$(qt6_get_bindir)/../libexec/uic" \
-			RCC="$(qt6_get_bindir)/../libexec/rcc" \
+		export MOC="$(qt6_get_libexecdir)/moc" \
+			UIC="$(qt6_get_libexecdir)/uic" \
+			RCC="$(qt6_get_libexecdir)/rcc" \
 			LRELEASE="$(qt6_get_bindir)/lrelease" \
-			QHELPGENERATOR="$(qt6_get_bindir)/../libexec/qhelpgenerator"
+			QHELPGENERATOR="$(qt6_get_libexecdir)/qhelpgenerator"
 	fi
 
 	econf "${myeconfargs[@]}"

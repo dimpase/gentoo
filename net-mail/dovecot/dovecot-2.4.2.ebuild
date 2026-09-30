@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -25,7 +25,7 @@ S="${WORKDIR}/${MY_P}"
 PIEGONHOLE_S="../dovecot-pigeonhole-${MY_PV}"
 LICENSE="LGPL-2.1 MIT"
 SLOT="0/${PV}"
-KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
+KEYWORDS="amd64 ~arm arm64 ~hppa ~mips ~ppc ppc64 ~riscv ~sparc ~x86"
 
 IUSE_DOVECOT_AUTH_DICT="cdb kerberos ldap lua mysql pam postgres sqlite"
 IUSE_DOVECOT_COMPRESS="lz4 zstd"
@@ -64,7 +64,7 @@ DEPEND="
 	system-icu? ( dev-libs/icu:= )
 	suid? ( acct-group/mail )
 	systemd? ( sys-apps/systemd:= )
-	textcat? ( app-text/libexttextcat )
+	textcat? ( app-text/libexttextcat:= )
 	unwind? ( sys-libs/libunwind:= )
 	zstd? ( app-arch/zstd:= )
 	"
@@ -90,6 +90,7 @@ BDEPEND="virtual/pkgconfig
 
 PATCHES=(
 	"${FILESDIR}/${PN}-autoconf-lua-version-v3.patch"
+	"${FILESDIR}/${PN}-2.4.2-tests.patch"
 )
 
 pkg_setup() {
@@ -234,8 +235,8 @@ pkg_postinst() {
 	fi
 
 	# Let's not make a new certificate if we already have one
-	if ! [[ -e "${ROOT}"/etc/ssl/dovecot/server.pem && \
-		-e "${ROOT}"/etc/ssl/dovecot/server.key ]];	then
+	if ! [[ -e "${ROOT}"/etc/dovecot/server.pem && \
+		-e "${ROOT}"/etc/dovecot/server.key ]];	then
 		einfo "Creating SSL	certificate"
 		SSL_ORGANIZATION="${SSL_ORGANIZATION:-Dovecot IMAP Server}"
 		install_cert /etc/dovecot/server

@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -10,7 +10,7 @@ inherit cmake python-any-r1 toolchain-funcs
 TEST_UTILS="paho.mqtt.testing"
 TEST_COMMIT="9d7bb80bb8b9d9cfc0b52f8cb4c1916401281103"
 
-DESCRIPTION="An Eclipse Paho C client library for MQTT for Windows, Linux and MacOS."
+DESCRIPTION="An Eclipse Paho C client library for MQTT for Windows, Linux and MacOS"
 HOMEPAGE="https://eclipse.org/paho"
 SRC_URI="
 	https://github.com/eclipse/paho.mqtt.c/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz
@@ -20,7 +20,7 @@ S="${WORKDIR}/paho.mqtt.c-${PV}"
 
 LICENSE="EPL-2.0"
 SLOT="1.3"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="amd64 x86"
 IUSE="doc examples +high-performance +ssl test"
 
 # Building samples needs ssl: #912262

@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: toolchain.eclass
@@ -148,11 +148,6 @@ tc_version_is_between() {
 # Extra options to pass to DejaGnu as RUNTESTFLAGS.
 : "${GCC_TESTS_RUNTESTFLAGS:=}"
 
-# @ECLASS_VARIABLE: TOOLCHAIN_PATCH_DEV
-# @DEFAULT_UNSET
-# @DESCRIPTION:
-# Indicate the developer who hosts the patchset for an ebuild.
-
 # @ECLASS_VARIABLE: TOOLCHAIN_HAS_TESTS
 # @DEFAULT_UNSET
 # @DESCRIPTION:
@@ -288,7 +283,7 @@ else
 	BINPATH=${TOOLCHAIN_BINPATH:-${PREFIX}/${CTARGET#accel-}/gcc-bin/${GCC_CONFIG_VER}}
 fi
 
-DATAPATH=${TOOLCHAIN_DATAPATH:-${PREFIX}/share/gcc-data/${CTARGET#accel-}/${GCC_CONFIG_VER}}
+DATAPATH=${TOOLCHAIN_DATAPATH:-${PREFIX}/share/gcc-data/${CTARGET}/${GCC_CONFIG_VER}}
 
 # Don't install in /usr/include/g++-v3/, but instead to gcc's internal directory.
 # We will handle /usr/include/g++-v3/ with gcc-config ...
@@ -349,7 +344,7 @@ if [[ ${PN} != kgcc64 && ${PN} != gcc-* ]] ; then
 	# and https://rust-gcc.github.io/2023/04/24/gccrs-and-gcc13-release.html for why
 	# it was disabled in 13.
 	tc_version_is_at_least 14.1 ${PV} && IUSE+=" rust" TC_FEATURES+=( rust )
-	tc_version_is_at_least 13.3.1_p20250522 ${PV} && IUSE+=" time64"
+	tc_version_is_at_least 11.5 ${PV} && IUSE+=" time64"
 	tc_version_is_at_least 15.1 ${PV} && IUSE+=" libgdiagnostics"
 	tc_version_is_at_least 15.1 ${PV} && IUSE+=" cobol" TC_FEATURES+=( cobol )
 	tc_version_is_at_least 16.0.0_p20251130 ${PV} && IUSE+=" algol68"
@@ -499,48 +494,6 @@ if [[ ${TOOLCHAIN_SET_S} == yes ]] ; then
 	fi
 fi
 
-gentoo_urls() {
-	# the list is sorted by likelihood of getting the patches tarball from
-	# respective devspace
-	# slyfox's distfiles are mirrored to sam's devspace
-	declare -A devspace_urls=(
-		[soap]=HTTP~soap/distfiles/URI
-		[sam]=HTTP~sam/distfiles/sys-devel/gcc/URI
-		[slyfox]=HTTP~sam/distfiles/URI
-		[xen0n]=HTTP~xen0n/distfiles/sys-devel/gcc/URI
-		[tamiko]=HTTP~tamiko/distfiles/URI
-		[zorry]=HTTP~zorry/patches/gcc/URI
-		[vapier]=HTTP~vapier/dist/URI
-		[blueness]=HTTP~blueness/dist/URI
-	)
-
-	# Newer ebuilds should set TOOLCHAIN_PATCH_DEV and we'll just
-	# return the full URL from the array.
-	if [[ -n ${TOOLCHAIN_PATCH_DEV} ]] ; then
-		local devspace_url=${devspace_urls[${TOOLCHAIN_PATCH_DEV}]}
-		if [[ -n ${devspace_url} ]] ; then
-			local devspace_url_exp=${devspace_url//HTTP/https:\/\/dev.gentoo.org\/}
-			devspace_url_exp=${devspace_url_exp//URI/$1}
-			echo ${devspace_url_exp}
-			return
-		fi
-	fi
-
-	# But we keep the old fallback list for compatibility with
-	# older ebuilds (overlays etc).
-	local devspace="
-		HTTP~soap/distfiles/URI
-		HTTP~sam/distfiles/URI
-		HTTP~sam/distfiles/sys-devel/gcc/URI
-		HTTP~tamiko/distfiles/URI
-		HTTP~zorry/patches/gcc/URI
-		HTTP~vapier/dist/URI
-		HTTP~blueness/dist/URI
-	"
-	devspace=${devspace//HTTP/https:\/\/dev.gentoo.org\/}
-	echo ${devspace//URI/$1} mirror://gentoo/$1
-}
-
 # This function handles the basics of setting the SRC_URI for a gcc ebuild.
 # To use, set SRC_URI with:
 #
@@ -586,9 +539,9 @@ get_gcc_src_uri() {
 	fi
 
 	[[ -n ${PATCH_VER} ]] && \
-		GCC_SRC_URI+=" $(gentoo_urls gcc-${PATCH_GCC_VER}-patches-${PATCH_VER}.tar.${TOOLCHAIN_PATCH_SUFFIX})"
+		GCC_SRC_URI+=" https://distfiles.gentoo.org/pub/proj/toolchain/gcc/patches/gcc-${PATCH_GCC_VER}-patches-${PATCH_VER}.tar.${TOOLCHAIN_PATCH_SUFFIX}"
 	[[ -n ${MUSL_VER} ]] && \
-		GCC_SRC_URI+=" $(gentoo_urls gcc-${MUSL_GCC_VER}-musl-patches-${MUSL_VER}.tar.${TOOLCHAIN_PATCH_SUFFIX})"
+		GCC_SRC_URI+=" https://distfiles.gentoo.org/pub/proj/toolchain/gcc/patches/gcc-${MUSL_GCC_VER}-musl-patches-${MUSL_VER}.tar.${TOOLCHAIN_PATCH_SUFFIX}"
 
 	[[ -n ${TOOLCHAIN_HAS_TESTS} ]] && \
 		GCC_SRC_URI+=" test? ( https://gitweb.gentoo.org/proj/gcc-patches.git/plain/scripts/testsuite-management/validate_failures.py?id=${GCC_VALIDATE_FAILURES_VERSION} -> gcc-validate-failures-${GCC_VALIDATE_FAILURES_VERSION}.py )"
@@ -776,10 +729,11 @@ do_gcc_gentoo_patches() {
 				fi
 			fi
 
-			local -
+			local shopt_save=$(shopt -p nullglob)
 			shopt -s nullglob
 			einfo "Applying musl patches ..."
 			eapply "${WORKDIR}"/musl/{,nocross/}*.patch
+			${shopt_save}
 		fi
 
 		#
@@ -900,6 +854,7 @@ setup_multilib_osdirnames() {
 
 # @FUNCTION: _get_bootstrap_gcc_info
 # @USAGE: [gcc_pkg|gcc_bin_base]...
+# @INTERNAL
 # @DESCRIPTION:
 # Get some information about the gcc that would be used to build this package.
 # All the variables that are passed as arguments will be set to their apropriate
@@ -1161,6 +1116,7 @@ toolchain_setup_ada() {
 	! tc-is-cross-compiler && _toolchain_make_gnat_wrappers
 
 	export CC="$(tc-getCC) -specs=${T}/ada.spec"
+	export CXX="$(tc-getCXX) -specs=${T}/ada.spec"
 
 	if ver_test ${PV} -lt 13 && [[ ${CTARGET#accel-} == hppa* ]] ; then
 		# For HPPA, the ada-bootstrap binaries seem to default
@@ -1200,6 +1156,8 @@ toolchain_setup_d() {
 		die "Did not find any appropriate GDC compiler installed"
 	fi
 
+	export CC=${bootstrap_gcc_bin_dir}/${CHOST}-gcc
+	export CXX=${bootstrap_gcc_bin_dir}/${CHOST}-g++
 	export GDC=${bootstrap_gcc_bin_dir}/${CHOST}-gdc
 }
 
@@ -1213,13 +1171,19 @@ toolchain_src_configure() {
 
 	downgrade_arch_flags
 	gcc_do_filter_flags
-	if [[ ${PN} != kgcc64 && ${PN} != gcc-* ]] && tc_version_is_at_least 13.3.1_p20250522 ${PV}; then
+	if [[ ${PN} != kgcc64 && ${PN} != gcc-* ]] && tc_version_is_at_least 11.5 ${PV}; then
 		append-cppflags "-D_GENTOO_TIME64_FORCE=$(usex time64 1 0)"
 	fi
 
 	if ! tc_version_is_at_least 11 && [[ $(gcc-major-version) -ge 12 ]] ; then
 		# https://gcc.gnu.org/PR105695 (bug #849359)
 		export ac_cv_std_swap_in_utility=no
+	fi
+
+	if is_go && [[ -f "${ESYSROOT}/usr/$(get_libdir)/libruntime.so" ]] ; then
+		# https://gcc.gnu.org/PR121877 (bug #972774)
+		export lt_cv_prog_compiler_c_o_GO=yes
+		export lt_cv_prog_compiler_pic_works_GO=yes
 	fi
 
 	local flag
@@ -1325,8 +1289,12 @@ toolchain_src_configure() {
 		_tc_use_if_iuse d && [[ ${GCCMAJOR} -ge 12 ]]
 	}
 
-	_need_ada_bootstrap_mangling && toolchain_setup_ada
+	# D goes first because while we'd like a matching CC/CXX for it,
+	# it's not critical like it is for Ada, where a configure test
+	# fails when trying to find GNAT w/o it. D has the benefit of the
+	# GDC envvar.
 	_need_d_bootstrap && toolchain_setup_d
+	_need_ada_bootstrap_mangling && toolchain_setup_ada
 
 	confgcc+=( --enable-languages=${GCC_LANG} )
 
@@ -1416,17 +1384,19 @@ toolchain_src_configure() {
 		confgcc+=( --disable-libstdcxx-pch )
 	fi
 
-	# build-id was disabled for file collisions: bug #526144
-	#
-	# # Turn on the -Wl,--build-id flag by default for ELF targets. bug #525942
-	# # This helps with locating debug files.
-	# case ${CTARGET} in
-	# *-linux-*|*-elf|*-eabi)
-	# 	tc_version_is_at_least 4.5 && confgcc+=(
-	# 		--enable-linker-build-id
-	# 	)
-	# 	;;
-	# esac
+	# Turn on the -Wl,--build-id flag by default for ELF targets. bug #953869
+	# This helps with locating debug files.
+	case ${CTARGET} in
+		*-linux-*)
+			tc_version_is_at_least 4.5 && confgcc+=(
+				--enable-linker-build-id
+			)
+		;;
+	esac
+
+	if in_iuse ada ; then
+		confgcc+=( $(use_enable ada libada) )
+	fi
 
 	### Cross-compiler option
 	#
@@ -1449,11 +1419,15 @@ toolchain_src_configure() {
 				;;
 			*-elf|*-eabi)
 				needed_libc=newlib
-				# Bare-metal targets don't have access to clock_gettime()
-				# arm-none-eabi example: bug #589672
-				# But we explicitly do --enable-libstdcxx-time above.
-				# Undoing it here.
-				confgcc+=( --disable-libstdcxx-time )
+				confgcc+=(
+					# Bare-metal targets don't have access to clock_gettime()
+					# arm-none-eabi example: bug #589672
+					# But we explicitly do --enable-libstdcxx-time above.
+					# Undoing it here.
+					--disable-libstdcxx-time
+					# bug #970098
+					--disable-libada
+				)
 				;;
 			*-gnu*)
 				needed_libc=glibc
@@ -1504,7 +1478,7 @@ toolchain_src_configure() {
 			# requires libc
 			confgcc_no_libc+=( --disable-libatomic )
 
-			if ! has_version ${CATEGORY#accel-}/${needed_libc} ; then
+			if ! has_version ${CATEGORY}/${needed_libc} ; then
 				confgcc+=(
 					"${confgcc_no_libc[@]}"
 					--disable-threads
@@ -1519,7 +1493,7 @@ toolchain_src_configure() {
 					# The option appeared in gcc-4.2.
 					confgcc+=( --with-long-double-128 )
 				fi
-			elif has_version "${CATEGORY#accel-}/${needed_libc}[headers-only(-)]" ; then
+			elif has_version "${CATEGORY}/${needed_libc}[headers-only(-)]" ; then
 				confgcc+=(
 					"${confgcc_no_libc[@]}"
 					--with-sysroot="${PREFIX}"/${CTARGET#accel-}
@@ -1581,6 +1555,10 @@ toolchain_src_configure() {
 				--enable-__cxa_atexit
 				--enable-clocale=gnu
 			)
+
+			if [[ ${CTARGET} == x86_64*-*-linux-* ]] && tc_version_is_at_least 16.0.0_p20251214 ${PV} ; then
+				confgcc+=( --with-tls=gnu2 )
+			fi
 			;;
 		*-solaris*)
 			confgcc+=( --enable-__cxa_atexit )
@@ -1774,10 +1752,6 @@ toolchain_src_configure() {
 		fi
 	fi
 
-	if in_iuse ada ; then
-		confgcc+=( $(use_enable ada libada) )
-	fi
-
 	if in_iuse cet ; then
 		# Usage: triple_arch triple_env cet_name
 		enable_cet_for() {
@@ -1796,7 +1770,11 @@ toolchain_src_configure() {
 	fi
 
 	if in_iuse systemtap ; then
-		confgcc+=( $(use_enable systemtap) )
+		if is_crosscompile ; then
+			confgcc+=( --disable-systemtap )
+		else
+			confgcc+=( $(use_enable systemtap) )
+		fi
 	fi
 
 	if in_iuse valgrind ; then
@@ -1805,7 +1783,7 @@ toolchain_src_configure() {
 		# We patch this in w/ PR66487-object-lifetime-instrumentation-for-Valgrind.patch,
 		# so it may not always be available.
 		if grep -q -- '--enable-valgrind-interop' "${S}"/libgcc/configure.ac ; then
-			if ! is_crosscompile || $(unset CC; unset CPP; tc-getCPP ${CTARGET#accel-}) -E - <<<"#include <valgrind/memcheck.h>" >& /dev/null ; then
+			if ! is_crosscompile && $(unset CC; unset CPP; tc-getCPP ${CTARGET#accel-}) -E - <<<"#include <valgrind/memcheck.h>" >& /dev/null ; then
 				confgcc+=( $(use_enable valgrind valgrind-interop) )
 			else
 				confgcc+=( --disable-valgrind-interop )
@@ -1842,19 +1820,27 @@ toolchain_src_configure() {
 	fi
 
 	if in_iuse pie ; then
-		confgcc+=( $(use_enable pie default-pie) )
+		# Workaround for broken configure logic (bug #970413)
+		if use pie ; then
+			confgcc+=( --enable-default-pie )
+		fi
 
 		if tc_version_is_at_least 14.1 ${PV} || tc_version_is_at_least 13.4.1_p20250814 ${PV} ; then
-			confgcc+=( --enable-host-pie )
+			# Workaround for broken configure logic (bug #970413)
+			if use pie ; then
+				confgcc+=( --enable-host-pie )
+			fi
 		fi
 	fi
 
 	if in_iuse default-znow && { tc_version_is_at_least 14.1 ${PV} || tc_version_is_at_least 13.4.1_p20250814 ${PV} ; } ; then
 		# See https://gcc.gnu.org/git/?p=gcc.git;a=commit;h=33ebb0dff9bb022f1e0709e0e73faabfc3df7931.
 		# TODO: Add to LDFLAGS_FOR_TARGET?
-		confgcc+=(
-			$(use_enable default-znow host-bind-now)
-		)
+		#
+		# Workaround for broken configure logic (bug #970413)
+		if use default-znow ; then
+			confgcc+=( --enable-host-bind-now )
+		fi
 	fi
 
 	if in_iuse ssp ; then
@@ -2118,7 +2104,7 @@ gcc_do_filter_flags() {
 			eerror "Different values of l1-cache-size detected!"
 			eerror "GCC will fail to bootstrap when comparing files with these flags."
 			eerror "This CPU is likely big.little/hybrid hardware with power/efficiency cores."
-			eerror "Please install app-misc/resolve-march-native and run 'resolve-march-native'"
+			eerror "Please install app-misc/resolve-march-native and run 'resolve-march-native --drop-cache-sizes'"
 			eerror "to find a safe value of CFLAGS for this CPU. Note that this may vary"
 			eerror "depending on the core it ran on. taskset can be used to fix the cores used."
 			die "Varying l1-cache-size found, aborting (bug #915389, gcc PR#111768)"
@@ -2327,7 +2313,7 @@ gcc_do_make() {
 		# The last known issues are with < GCC 4.9 or so, but it's easier
 		# to keep this bound somewhat fresh just to avoid problems. Ultimately,
 		# using not-O0 is just a build-time speed improvement anyway.
-		if ! tc-is-gcc || ver_test $(gcc-fullversion) -lt 10 ; then
+		if ! tc-is-gcc || ver_test $(gcc-fullversion) -lt 10 || ver_test ${PV} -lt 10 ; then
 			einfo "Resetting STAGE1_*FLAGS to -O0 because of old or non-GCC bootstrap compiler"
 			STAGE1_CFLAGS="-O0"
 			STAGE1_CXXFLAGS="-O0"
@@ -2335,8 +2321,10 @@ gcc_do_make() {
 		# We have a very good host compiler but it may be a bit too good, and
 		# know about flags that the version we are compiling does not know
 		# about. In principle we could check e.g. which gnat1 we are using as
-		# a bootstrap. It's simpler to do it unconditionally for now.
-		elif _tc_use_if_iuse ada || _tc_use_if_iuse d ; then
+		# a bootstrap. It's simpler to do it unconditionally for now, with
+		# the exception of when we're bootstrapping the same version we're
+		# building with.
+		elif ! { tc_use_major_version_only && ver_test $(gcc-major-version) -eq ${SLOT} ; } && { _tc_use_if_iuse ada || _tc_use_if_iuse d ; } ; then
 			einfo "Resetting STAGE1_*FLAGS to -O2 for Ada/D bootstrapping"
 			STAGE1_CFLAGS="-O2"
 			STAGE1_CXXFLAGS="-O2"
@@ -2776,7 +2764,7 @@ gcc_movelibs() {
 	# that you want to link against when building tools rather than building
 	# code to run on the target.
 	if is_crosscompile ; then
-		dodir "${HOSTLIBPATH#${EPREFIX}}"
+		dodir "${HOSTLIBPATH#"${EPREFIX}"}"
 		# XXX: Ideally, we'd use $(get_libdir) here, but it's
 		# not right for cross. See bug #942573 and bug #794181.
 		if [[ ${GCC_BUILD_PLUGINS} == 1 ]] ; then
@@ -2786,7 +2774,7 @@ gcc_movelibs() {
 
 	# libgccjit gets installed to /usr/lib, not /usr/$(get_libdir). Probably
 	# due to a bug in gcc build system.
-	dodir "${LIBPATH#${EPREFIX}}"
+	dodir "${LIBPATH#"${EPREFIX}"}"
 
 	if is_jit ; then
 		mv "${ED}"/usr/lib/libgccjit* "${D}${LIBPATH}" || die
@@ -2831,9 +2819,14 @@ gcc_movelibs() {
 	# Without this, we end up either unable to find the libgomp spec/archive, or
 	# we underlink and can't find gomp_nvptx_main (presumably because we can't find the plugin)
 	# https://src.fedoraproject.org/rpms/gcc/blob/02c34dfa3627ef05d676d30e152a66e77b58529b/f/gcc.spec#_1445
-	if [[ ${CATEGORY} == cross-accel-nvptx* ]] && is_fortran ; then
+	#
+	# openmp/fortran check is needed here to know if we're in the stage1
+	# build or not.
+	if [[ ${CATEGORY} == cross-accel-nvptx* ]] && { _tc_use_if_iuse openmp || is_fortran ; } ; then
 		rm -rf "${ED}"/usr/libexec/gcc/nvptx-none/${GCCMAJOR}/install-tools
-		rm -rf "${ED}"/usr/libexec/gcc/${CHOST}/${GCCMAJOR}/accel/nvptx-none/{install-tools,plugin,cc1,cc1plus,f951}
+		rm -rf "${ED}"/usr/libexec/gcc/${CHOST}/${GCCMAJOR}/accel/nvptx-none/{install-tools,plugin,cc1,cc1plus}
+		is_fortran && rm -rf "${ED}"/usr/libexec/gcc/${CHOST}/${GCCMAJOR}/accel/nvptx-none/f951
+
 		rm -rf "${ED}"/usr/lib/gcc/nvptx-none/${GCCMAJOR}/{install-tools,plugin}
 		rm -rf "${ED}"/usr/lib/gcc/${CHOST}/${GCCMAJOR}/accel/nvptx-none/{install-tools,plugin,include-fixed}
 		mv "${ED}"/usr/nvptx-none/lib/*.{a,spec} "${ED}"/usr/lib/gcc/${CHOST}/${GCCMAJOR}/accel/nvptx-none/

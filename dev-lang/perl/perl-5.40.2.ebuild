@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -55,7 +55,7 @@ LICENSE="|| ( Artistic GPL-1+ )"
 SLOT="0/${SUBSLOT}"
 
 if [[ "${PV##*.}" != "9999" ]] && [[ "${PV/rc//}" == "${PV}" ]] ; then
-	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos ~x64-solaris"
+	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos ~x64-solaris"
 fi
 
 IUSE="berkdb perl_features_debug doc gdbm perl_features_ithreads minimal perl_features_quadmath"
@@ -246,6 +246,9 @@ src_remove_dual_man() {
 	pkg="$1"
 	ver="$2"
 	shift 2
+
+	has noman ${FEATURES} && return 0
+
 	case "${EBUILD_PHASE:-none}" in
 		postinst|postrm)
 			for i in "$@" ; do
@@ -635,6 +638,11 @@ src_configure() {
 			HOSTCC=$(tc-getBUILD_CC) \
 			HOSTCFLAGS="${CFLAGS_FOR_BUILD} -D_GNU_SOURCE" \
 			HOSTLDFLAGS="${LDFLAGS_FOR_BUILD}"
+
+		# bug #977768
+		if tc-is-clang; then
+			export HOSTCFLAGS="${HOSTCFLAGS} -fno-strict-aliasing"
+		fi
 	fi
 
 	# bug #877659, bug #821577

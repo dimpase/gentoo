@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..14} )
+PYTHON_COMPAT=( python3_{12..14} )
 VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/torproject.org.asc
 inherit edo python-any-r1 readme.gentoo-r1 systemd verify-sig
 
@@ -17,11 +17,13 @@ if [[ ${PV} == 9999 ]] ; then
 	inherit autotools git-r3
 else
 	SRC_URI="
-		https://www.torproject.org/dist/${MY_PF}.tar.gz
+		https://dist.torproject.org/${MY_PF}.tar.gz
 		https://archive.torproject.org/tor-package-archive/${MY_PF}.tar.gz
 		verify-sig? (
 			https://dist.torproject.org/${MY_PF}.tar.gz.sha256sum
 			https://dist.torproject.org/${MY_PF}.tar.gz.sha256sum.asc
+			https://archive.torproject.org/tor-package-archive/${MY_PF}.tar.gz.sha256sum
+			https://archive.torproject.org/tor-package-archive/${MY_PF}.tar.gz.sha256sum.asc
 		)
 	"
 
@@ -44,7 +46,7 @@ RESTRICT="!test? ( test )"
 
 RDEPEND="
 	>=dev-libs/libevent-2.1.12-r1:=[ssl]
-	dev-libs/openssl:=[-bindist(-)]
+	>=dev-libs/openssl-1.1.1:=[-bindist(-)]
 	virtual/zlib:=
 	caps? ( sys-libs/libcap )
 	man? ( app-text/asciidoc )
@@ -190,7 +192,8 @@ src_install() {
 
 	newconfd "${FILESDIR}"/tor.confd tor
 	newinitd "${FILESDIR}"/tor.initd-r9 tor
-	systemd_dounit "${FILESDIR}"/tor.service
+	systemd_newunit "${FILESDIR}"/tor.service-r1 "${PN}.service"
+	systemd_newunit "${FILESDIR}"/tor_at.service "${PN}@.service"
 
 	keepdir /var/lib/tor
 

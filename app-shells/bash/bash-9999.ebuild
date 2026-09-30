@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -75,7 +75,7 @@ fi
 LICENSE="GPL-3+"
 SLOT="0"
 if (( PLEVEL >= 0 )); then
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos ~x64-solaris"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
 fi
 IUSE="afs bashlogger examples mem-scramble +net nls plugins pgo +readline"
 # As of 5.4_alpha_pre20251016, bash tests finally exit non-0 on failure.
@@ -103,6 +103,9 @@ QA_CONFIGURE_OPTIONS="--disable-static"
 
 PATCHES=(
 	#"${WORKDIR}"/${PN}-${GENTOO_PATCH_VER}/
+
+	# bug #971782
+	"${FILESDIR}"/${PN}-5.3_p9-general-workaround-aliasing-violation-in-REVERSE_LIS.patch
 
 	# Patches to or from Chet, posted to the bug-bash mailing list.
 	"${FILESDIR}/${PN}-5.0-syslog-history-extern.patch"
@@ -178,7 +181,24 @@ src_configure() {
 	unset -v YACC
 
 	if tc-is-cross-compiler; then
+		export CC_FOR_BUILD="$(tc-getBUILD_CC)"
+		# https://lists.gnu.org/archive/html/bug-bash/2025-05/msg00029.html
 		export CFLAGS_FOR_BUILD="${BUILD_CFLAGS} -std=gnu17"
+
+		if use kernel_Hurd ; then
+			# Necessary for cross-built bash for Hurd, otherwise
+			# config.status generation at end of configure will hang
+			# natively.
+			#
+			# https://lists.debian.org/debian-cross/2023/11/msg00000.html
+			# https://lists.gnu.org/archive/html/bug-bash/2024-11/msg00202.html
+			# https://lists.gnu.org/archive/html/bug-bash/2005-04/msg00074.html
+			cat <<-EOF > builtins/psize.sh || die
+			#!/bin/sh
+			echo "#define PIPESIZE 16384"
+			EOF
+			chmod +x builtins/psize.sh || die
+		fi
 	fi
 
 	myconf=(
@@ -443,7 +463,7 @@ EOF
 			cat <<'EOF'
 The window title setting behaviour has been improved. It is now formatted as
 "\u@\h \W", in accordance with the prompting mechanism of bash. For example,
-after switching to the home directory, the current working directly will be
+after switching to the home directory, the current working directory will be
 shown as the <tilde> character.
 
 The value of PROMPT_DIRTRIM is now respected. If this variable is unset, the

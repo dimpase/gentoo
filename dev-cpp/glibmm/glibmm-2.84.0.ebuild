@@ -1,8 +1,8 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 inherit gnome.org meson-multilib python-any-r1
 
 DESCRIPTION="C++ interface for glib2"
@@ -10,7 +10,7 @@ HOMEPAGE="https://gtkmm.gnome.org/en/index.html"
 
 LICENSE="LGPL-2.1+"
 SLOT="2.68"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
 IUSE="gtk-doc debug test"
 RESTRICT="!test? ( test )"
 
@@ -21,10 +21,11 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 BDEPEND="
 	${PYTHON_DEPS}
+	dev-lang/perl
+	dev-perl/XML-Parser
 	virtual/pkgconfig
 	gtk-doc? (
 		app-text/doxygen[dot]
-		dev-lang/perl
 		dev-libs/libxslt
 	)
 "

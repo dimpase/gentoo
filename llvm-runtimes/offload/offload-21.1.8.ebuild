@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,7 +12,7 @@ HOMEPAGE="https://openmp.llvm.org"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
 SLOT="0/${LLVM_SOABI}"
-KEYWORDS="~amd64 ~arm64 ~ppc64"
+KEYWORDS="amd64 arm64 ppc64"
 IUSE="+clang debug ompt test llvm_targets_AMDGPU llvm_targets_NVPTX"
 REQUIRED_USE="
 	llvm_targets_AMDGPU? ( clang )
@@ -43,7 +43,7 @@ BDEPEND="
 		$(python_gen_any_dep '
 			dev-python/lit[${PYTHON_USEDEP}]
 		')
-		llvm-core/clang
+		llvm-core/clang:${LLVM_MAJOR}
 	)
 "
 

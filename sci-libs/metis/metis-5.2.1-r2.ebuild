@@ -1,18 +1,18 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 inherit cmake
 
-DESCRIPTION="A package for unstructured serial graph partitioning"
+DESCRIPTION="Package for unstructured serial graph partitioning"
 HOMEPAGE="https://github.com/KarypisLab/METIS"
 SRC_URI="https://github.com/KarypisLab/METIS/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
 S="${WORKDIR}/METIS-${PV}"
 
 LICENSE="Apache-2.0"
 SLOT="0"
-KEYWORDS="amd64 arm arm64 ~hppa ~loong ~mips ~ppc ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~arm64-macos ~x64-macos"
+KEYWORDS="amd64 arm arm64 ~hppa ~loong ~mips ~ppc ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos"
 IUSE="double-precision examples int64 openmp"
 
 PATCHES=(
@@ -20,6 +20,7 @@ PATCHES=(
 	"${FILESDIR}"/${P}-respect-user-flags.patch
 	# https://github.com/KarypisLab/METIS/pull/52 Bug 905822
 	"${FILESDIR}"/${P}-add-gklib-as-required.patch
+	"${FILESDIR}"/${P}-cmake4.patch # bug 957609
 )
 
 DEPEND="sci-libs/gklib"

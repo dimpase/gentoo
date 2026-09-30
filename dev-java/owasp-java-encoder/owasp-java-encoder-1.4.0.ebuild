@@ -1,4 +1,4 @@
-# Copyright 2023-2025 Gentoo Authors
+# Copyright 2023-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -10,13 +10,13 @@ MAVEN_ID="org.owasp.encoder:encoder:${PV}"
 inherit java-pkg-2 java-pkg-simple
 
 DESCRIPTION="OWASP Java Encoder"
-HOMEPAGE="https://owasp.org/www-project-java-encoder/"
+HOMEPAGE="https://owasp.org/projects/java-encoder"
 SRC_URI="https://github.com/OWASP/owasp-java-encoder/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 S="${WORKDIR}/${P}/core"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="amd64 arm64 ppc64"
 
 DEPEND=">=virtual/jdk-1.8:*"
 RDEPEND=">=virtual/jre-1.8:*"

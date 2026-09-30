@@ -1,15 +1,16 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DISTUTILS_USE_PEP517=setuptools
 DISTUTILS_EXT=1
-PYTHON_COMPAT=( python3_{11..14} )
+DISTUTILS_OPTIONAL=1
+PYTHON_COMPAT=( python3_{12..15} )
 USE_RUBY="ruby32 ruby33"
 
 # No, I am not calling ruby-ng
-inherit distutils-r1 toolchain-funcs multilib-minimal
+inherit distutils-r1 dot-a flag-o-matic toolchain-funcs multilib-minimal
 
 MY_PV="${PV//_/-}"
 MY_P="${PN}-${MY_PV}"
@@ -32,26 +33,55 @@ SLOT="0"
 IUSE="python ruby static-libs ruby_targets_ruby32 ruby_targets_ruby33"
 REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
 
-RDEPEND="dev-libs/libpcre2:=[static-libs?,${MULTILIB_USEDEP}]
+RDEPEND="
 	>=sys-libs/libsepol-${PV}:=[${MULTILIB_USEDEP},static-libs(+)]
+	virtual/libpcre2-internals:=[static-libs?,${MULTILIB_USEDEP}]
 	python? ( ${PYTHON_DEPS} )
 	ruby? (
 		ruby_targets_ruby32? ( dev-lang/ruby:3.2 )
 		ruby_targets_ruby33? ( dev-lang/ruby:3.3 )
 	)
-	elibc_musl? ( sys-libs/fts-standalone )"
+	elibc_musl? ( sys-libs/fts-standalone )
+"
 DEPEND="${RDEPEND}"
-BDEPEND="virtual/pkgconfig
+BDEPEND="
+	virtual/pkgconfig
 	python? (
 		>=dev-lang/swig-2.0.9
-		dev-python/pip[${PYTHON_USEDEP}]
-)
-	ruby? ( >=dev-lang/swig-2.0.9 )"
+		${PYTHON_DEPS}
+		${DISTUTILS_DEPS}
+	)
+	ruby? ( >=dev-lang/swig-2.0.9 )
+"
 
 src_prepare() {
 	eapply_user
 
+	if use python; then
+		distutils-r1_src_prepare
+	fi
+
 	multilib_copy_sources
+}
+
+src_configure() {
+	# bug #926520
+	# https://github.com/SELinuxProject/selinux/issues/461
+	# https://github.com/SELinuxProject/selinux/issues/512
+	append-ldflags $(test-flags-CCLD -Wl,--undefined-version)
+
+	use static-libs && lto-guarantee-fat
+
+	multilib-minimal_src_configure
+}
+
+multilib_src_configure() {
+	default
+	if multilib_is_native_abi; then
+		if use python; then
+			distutils-r1_src_configure
+		fi
+	fi
 }
 
 multilib_src_compile() {
@@ -98,6 +128,16 @@ multilib_src_compile() {
 	fi
 }
 
+multilib_src_test() {
+	default
+
+	if multilib_is_native_abi; then
+		if use python; then
+			distutils-r1_src_test
+		fi
+	fi
+}
+
 multilib_src_install() {
 	emake DESTDIR="${D}" \
 		LIBDIR="\$(PREFIX)/$(get_libdir)" \
@@ -134,7 +174,11 @@ multilib_src_install() {
 		fi
 	fi
 
-	use static-libs || rm "${ED}"/usr/$(get_libdir)/*.a || die
+	if use static-libs; then
+		strip-lto-bytecode
+	else
+		rm "${ED}"/usr/$(get_libdir)/*.a || die
+	fi
 }
 
 python_install() {

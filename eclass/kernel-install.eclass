@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Gentoo Authors
+# Copyright 2020-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: kernel-install.eclass
@@ -53,7 +53,7 @@ if [[ -z ${_KERNEL_INSTALL_ECLASS} ]]; then
 _KERNEL_INSTALL_ECLASS=1
 
 case ${EAPI} in
-	8) ;;
+	8) inherit eapi9-pipestatus ;;
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
 
@@ -178,7 +178,7 @@ if [[ ${KERNEL_IUSE_GENERIC_UKI} ]]; then
 		["sys-fs/multipath-tools"]="GPL-2"
 		["sys-fs/xfsprogs"]="LGPL-2.1"
 		["sys-kernel/dracut"]="GPL-2"
-		["sys-kernel/linux-firmware[redistributable,-unknown-license]"]="GPL-2 GPL-2+ GPL-3 BSD MIT || ( MPL-1.1 GPL-2 ) linux-fw-redistributable BSD-2 BSD BSD-4 ISC MIT"
+		["sys-kernel/linux-firmware[redistributable,-unknown-license(-)]"]="GPL-2 GPL-2+ GPL-3 BSD MIT || ( MPL-1.1 GPL-2 ) linux-fw-redistributable BSD-2 BSD BSD-4 ISC MIT"
 		["sys-libs/glibc"]="LGPL-2.1+ BSD HPND ISC inner-net rc PCRE"
 		["sys-libs/libapparmor"]="GPL-2 LGPL-2.1"
 		["sys-libs/libcap"]="|| ( GPL-2 BSD )"
@@ -235,76 +235,6 @@ BDEPEND="
 		sparc? ( app-emulation/qemu[qemu_softmmu_targets_sparc,qemu_softmmu_targets_sparc64] )
 		x86? ( app-emulation/qemu[qemu_softmmu_targets_i386] )
 	)"
-
-# @FUNCTION: kernel-install_can_update_symlink
-# @USAGE:
-# @DESCRIPTION:
-# Determine whether the symlink at <target> (full path) should be
-# updated.  Returns 0 if it should, 1 to leave as-is.
-kernel-install_can_update_symlink() {
-	debug-print-function ${FUNCNAME} "$@"
-
-	[[ ${#} -eq 1 ]] || die "${FUNCNAME}: invalid arguments"
-	local target=${1}
-
-	# if the symlink does not exist or is broken, update
-	[[ ! -e ${target} ]] && return 0
-	# if the target does not seem to contain kernel sources
-	# (i.e. is probably a leftover directory), update
-	[[ ! -e ${target}/Makefile ]] && return 0
-
-	local symlink_target=$(readlink "${target}")
-	# the symlink target should start with the same basename as target
-	# (e.g. "linux-*")
-	[[ ${symlink_target} != ${target##*/}-* ]] && return 1
-
-	# try to establish the kernel version from symlink target
-	local symlink_ver=${symlink_target#${target##*/}-}
-	# strip KV_LOCALVERSION, we want to update the old kernels not using
-	# KV_LOCALVERSION suffix and the new kernels using it
-	symlink_ver=${symlink_ver%${KV_LOCALVERSION}}
-	symlink_ver=${symlink_ver/-p/_p}
-	# strip -p* revision
-	local symlink_ver_no_rev=${symlink_ver%_p[0-9]*}
-	local rev=${symlink_ver#${symlink_ver_no_rev}}
-	rev=${rev#_p}
-
-	# if ${symlink_ver} contained anything but numbers and revision (e.g.
-	# an extra suffix), it's not our kernel, so leave it alone
-	[[ -n ${symlink_ver_no_rev//[0-9.]/} || -n ${rev//[0-9]/} ]] && return 1
-
-	local symlink_pkg=${CATEGORY}/${PN}-${symlink_ver}
-	# if the current target is either being replaced, or still
-	# installed (probably depclean candidate), update the symlink
-	has "${symlink_ver}" ${REPLACING_VERSIONS} && return 0
-	has_version -r "~${symlink_pkg}" && return 0
-
-	# otherwise it could be another kernel package, so leave it alone
-	return 1
-}
-
-# @FUNCTION: kernel-install_update_symlink
-# @USAGE: <target> <version>
-# @DESCRIPTION:
-# Update the kernel source symlink at <target> (full path) with a link
-# to <target>-<version> if it's either missing or pointing out to
-# an older version of this package.
-kernel-install_update_symlink() {
-	debug-print-function ${FUNCNAME} "$@"
-
-	[[ ${#} -eq 2 ]] || die "${FUNCNAME}: invalid arguments"
-	local target=${1}
-	local version=${2}
-
-	if kernel-install_can_update_symlink "${target}"; then
-		ebegin "Updating ${target} symlink"
-		ln -f -n -s "${target##*/}-${version}" "${target}"
-		eend ${?}
-	else
-		elog "${target} points at another kernel, leaving it as-is."
-		elog "Please use 'eselect kernel' to update it when desired."
-	fi
-}
 
 # @FUNCTION: kernel-install_get_qemu_arch
 # @DESCRIPTION:
@@ -403,18 +333,19 @@ kernel-install_create_qemu_image() {
 }
 
 # @FUNCTION: kernel-install_test
-# @USAGE: <version> <image> <modules>
+# @USAGE: <version> <image> <modules> <config>
 # @DESCRIPTION:
 # Test that the kernel can successfully boot a minimal system image
 # in qemu.  <version> is the kernel version, <image> path to the image,
-# <modules> path to module tree.
+# <modules> path to module tree, <config> path to the kernel config.
 kernel-install_test() {
 	debug-print-function ${FUNCNAME} "$@"
 
-	[[ ${#} -eq 3 ]] || die "${FUNCNAME}: invalid arguments"
+	[[ ${#} -eq 4 ]] || die "${FUNCNAME}: invalid arguments"
 	local version=${1}
 	local image=${2}
 	local modules=${3}
+	local config=${4}
 
 	local qemu_arch=$(kernel-install_get_qemu_arch)
 
@@ -435,12 +366,6 @@ kernel-install_test() {
 	> "${T}"/empty-file || die
 	mkdir -p "${T}"/empty-directory || die
 
-	local compress="gzip"
-	if [[ ${KERNEL_IUSE_GENERIC_UKI} ]] && use generic-uki; then
-		# Test with same compression method as the generic initrd
-		compress="xz -9e --check=crc32"
-	fi
-
 	dracut \
 		--conf "${T}"/empty-file \
 		--confdir "${T}"/empty-directory \
@@ -450,7 +375,7 @@ kernel-install_test() {
 		--omit "${omit_mods[*]}" \
 		--nostrip \
 		--no-early-microcode \
-		--compress="${compress}" \
+		--compress="$(dist-kernel_get_compressor "${config}")" \
 		"${T}/initrd" "${version}" || die
 
 	kernel-install_create_qemu_image "${T}/fs.img"
@@ -482,12 +407,10 @@ kernel-install_test() {
 			;;
 	esac
 
-	if [[ ${KERNEL_IUSE_MODULES_SIGN} ]]; then
-		# If KERNEL_IUSE_MODULES_SIGN, but no IUSE=modules-sign,
-		# then this is gentoo-kernel-bin test phase with signed mods.
-		if ! in_iuse modules-sign || use modules-sign; then
-			qemu_extra_append+=" module.sig_enforce=1"
-		fi
+	# If no IUSE=modules-sign, then this is gentoo-kernel-bin test
+	# phase with signed mods.
+	if ! in_iuse modules-sign || use modules-sign; then
+		qemu_extra_append+=" module.sig_enforce=1"
 	fi
 
 	cat > run.sh <<-EOF || die
@@ -639,25 +562,7 @@ kernel-install_pkg_preinst() {
 		fi
 	fi
 
-	if [[ -L ${EROOT}/lib && ${EROOT}/lib -ef ${EROOT}/usr/lib ]]; then
-		# Adjust symlinks for merged-usr.
-		rm "${ED}/lib/modules/${KV_FULL}"/{build,source} || die
-		dosym "../../../src/linux-${KV_FULL}" "/usr/lib/modules/${KV_FULL}/build"
-		dosym "../../../src/linux-${KV_FULL}" "/usr/lib/modules/${KV_FULL}/source"
-		local file
-		for file in .config System.map; do
-			if [[ -L "${ED}/lib/modules/${KV_FULL}/${file#.}" ]]; then
-				rm "${ED}/lib/modules/${KV_FULL}/${file#.}" || die
-				dosym "../../../src/linux-${KV_FULL}/${file}" "/usr/lib/modules/${KV_FULL}/${file#.}"
-			fi
-		done
-		for file in vmlinux vmlinuz; do
-			if [[ -L "${ED}/lib/modules/${KV_FULL}/${file}" ]]; then
-				rm "${ED}/lib/modules/${KV_FULL}/${file}" || die
-				dosym "../../../src/linux-${KV_FULL}/${image_path}" "/usr/lib/modules/${KV_FULL}/${file}"
-			fi
-		done
-	fi
+	dist-kernel_update_lib_symlinks "${KV_FULL}" "${image_path}"
 }
 
 # @FUNCTION: kernel-install_extract_from_uki
@@ -692,7 +597,9 @@ kernel-install_extract_from_uki() {
 		)
 
 		# Check if there was a padding warning
-		if [[ ${sbverify_err} == "warning: data remaining"*": gaps between PE/COFF sections?"* ]]
+		if [[ ${?} -eq 0 ]]; then
+			sbverify_err=
+		elif [[ ${sbverify_err} == "warning: data remaining"*": gaps between PE/COFF sections?"* ]]
 		then
 			# https://github.com/systemd/systemd/issues/35851
 			local proper_size=${sbverify_err#"warning: data remaining["}
@@ -781,7 +688,7 @@ kernel-install_install_all() {
 kernel-install_pkg_postinst() {
 	debug-print-function ${FUNCNAME} "$@"
 
-	kernel-install_update_symlink "${EROOT}/usr/src/linux" "${KV_FULL}"
+	dist-kernel_update_src_symlink "${EROOT}/usr/src/linux" "${KV_FULL}"
 	dist-kernel_compressed_module_cleanup \
 		"${EROOT}/lib/modules/${KV_FULL}"
 
@@ -842,33 +749,11 @@ kernel-install_compress_modules() {
 		if [[ -z ${KV_FULL} ]]; then
 			KV_FULL=${PV}${KV_LOCALVERSION}
 		fi
-		local suffix=$(dist-kernel_get_module_suffix "${ED}/usr/src/linux-${KV_FULL}/.config")
-		local compress=()
-		# Options taken from linux-mod-r1.eclass.
-		# We don't instruct the compressor to parallelize because it applies
-		# multithreading per file, so it works only for big files, and we have
-		# lots of small files instead.
-		case ${suffix} in
-			.ko)
-				return
-				;;
-			.ko.gz)
-				compress+=( gzip )
-				;;
-			.ko.xz)
-				compress+=( xz --check=crc32 --lzma2=dict=1MiB )
-				;;
-			.ko.zst)
-				compress+=( zstd -q --rm )
-				;;
-			*)
-				die "Unknown compressor: ${suffix}"
-				;;
-		esac
 
 		find "${ED}/lib/modules/${KV_FULL}" -name '*.ko' -print0 |
-			xargs -0 -P "$(makeopts_jobs)" -n 128 "${compress[@]}"
-		assert "Compressing kernel modules failed"
+			xargs -0 -P "$(makeopts_jobs)" -n 128 \
+				$(dist-kernel_get_compressor "${ED}/usr/src/linux-${KV_FULL}/.config")
+		pipestatus || die "Compressing kernel modules failed"
 
 		# Module paths have changed, run depmod
 		depmod --all --basedir "${ED}" ${KV_FULL} || die

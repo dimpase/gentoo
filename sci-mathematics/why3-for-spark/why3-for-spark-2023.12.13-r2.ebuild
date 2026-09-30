@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -16,7 +16,7 @@ S="${WORKDIR}"/why3-${ID}
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64"
+KEYWORDS="amd64 ~arm64"
 IUSE="coq doc emacs gtk html hypothesis-selection +ocamlopt sexp zarith zip"
 RESTRICT="strip"
 
@@ -25,7 +25,7 @@ RDEPEND="
 	dev-ml/num:=[ocamlopt?]
 	dev-ml/re:=[ocamlopt?]
 	dev-ml/yojson:=
-	coq? ( <=sci-mathematics/coq-8.18 )
+	coq? ( <sci-mathematics/coq-8.18 )
 	emacs? ( app-editors/emacs:* )
 	gtk? ( dev-ml/lablgtk:=[sourceview] )
 	html? ( dev-tex/hevea:= )
@@ -52,6 +52,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-2021-make.patch #Bug #883167
 	"${FILESDIR}"/${PN}-2020-bibtex.patch
 	"${FILESDIR}"/${P}-spark.patch
+	"${FILESDIR}"/${P}-yojson3.patch
 	"${FILESDIR}"/${PN}-2021-sighandler.patch
 )
 

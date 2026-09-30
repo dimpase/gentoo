@@ -1,12 +1,12 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 # Bump notes: https://wiki.gentoo.org/wiki/Project:Rust/Rust_bump
 
-LLVM_COMPAT=( 21 )
-PYTHON_COMPAT=( python3_{11..14} )
+LLVM_COMPAT=( 22 )
+PYTHON_COMPAT=( python3_{12..14} )
 
 # Patches are kept in rust-patches.git, see its README.rst for the versioning
 # scheme.
@@ -15,7 +15,7 @@ PYTHON_COMPAT=( python3_{11..14} )
 # in the ebuild for changes that don't require a revbump.
 #
 # Uncomment this line when the ebuild needs a patchset update but no revbump.
-#RUST_PATCH_VER=${PV}-1
+# RUST_PATCH_VER=${PV}-1
 
 RUST_MAX_VER=${PV%%_*}
 RUST_PV=${PV%%_p*}
@@ -24,15 +24,14 @@ RUST_P=${PN}-${RUST_PV}
 
 if [[ ${PV} == *9999* ]]; then
 	# Update this as new `beta` releases come out.
-	RUST_MIN_VER="1.88.0"
+	RUST_MIN_VER="1.96.0"
 elif [[ ${PV} == *beta* ]]; then
-	RUST_MAX_VER="$(ver_cut 1).$(ver_cut 2).0"
 	RUST_MIN_VER="$(ver_cut 1).$(($(ver_cut 2) - 1)).0"
 else
 	RUST_MIN_VER="$(ver_cut 1).$(($(ver_cut 2) - 1)).0"
 fi
 
-inherit check-reqs estack flag-o-matic llvm-r1 multiprocessing optfeature
+inherit check-reqs estack flag-o-matic llvm-r2 multiprocessing optfeature
 inherit multilib multilib-build python-any-r1 rust rust-toolchain toolchain-funcs
 inherit verify-sig
 
@@ -90,8 +89,8 @@ ALL_RUST_SYSROOTS=( "${ALL_RUST_SYSROOTS[@]/#/rust_sysroots_}" )
 LICENSE="|| ( MIT Apache-2.0 ) BSD BSD-1 BSD-2 BSD-4"
 SLOT="${PV%%_*}" # Beta releases get to share the same SLOT as the eventual stable
 
-IUSE="big-endian clippy cpu_flags_x86_sse2 debug dist doc llvm-libunwind lto"
-IUSE+=" rustfmt rust-analyzer rust-src +system-llvm test"
+IUSE="big-endian +clippy cpu_flags_x86_sse2 debug dist +doc llvm-libunwind lto"
+IUSE+=" +rustfmt rust-analyzer rust-src +system-llvm test"
 IUSE+=" ${ALL_LLVM_TARGETS[*]} ${ALL_RUST_SYSROOTS[*]}"
 
 if [[ ${PV} = *9999* ]]; then
@@ -125,6 +124,7 @@ BDEPEND="
 			sys-devel/mold
 		)
 	) )
+	rust_sysroots_wasm? ( llvm-core/clang )
 	!system-llvm? (
 		>=dev-build/cmake-3.13.4
 		app-alternatives/ninja
@@ -135,7 +135,8 @@ BDEPEND="
 
 DEPEND="
 	>=app-arch/xz-utils-5.2
-	net-misc/curl:=[http2,ssl]
+	dev-db/sqlite:3
+	net-misc/curl[http2,ssl]
 	virtual/zlib:=
 	dev-libs/openssl:0=
 	system-llvm? (
@@ -185,6 +186,7 @@ QA_SONAME="
 
 QA_PRESTRIPPED="
 	usr/lib/${PN}/${SLOT}/lib/rustlib/.*/bin/rust-llvm-dwp
+	usr/lib/${PN}/${SLOT}/lib/rustlib/.*/bin/rust-objcopy
 	usr/lib/${PN}/${SLOT}/lib/rustlib/.*/lib/self-contained/crtn.o
 "
 
@@ -260,6 +262,17 @@ pkg_setup() {
 	pre_build_checks
 	python-any-r1_pkg_setup
 
+	if ! [[ -v _RUST_LLVM_MAP[${SLOT}] ]] ; then
+		die "${SLOT} is missing from rust.eclass's RUST_LLVM_MAP! Please fix the eclass."
+	fi
+	local found_slot i
+	for (( i = 0; i < ${#_RUST_SLOTS_ORDERED[@]} ; i++ )) ; do
+		[[ ${_RUST_SLOTS_ORDERED[i]} == ${SLOT} ]] && found_slot=1
+	done
+	if ! [[ -v found_slot ]] ; then
+		die "${SLOT} is missing from rust.eclass's _RUST_SLOTS_ORDERED! Please fix the eclass."
+	fi
+
 	export LIBGIT2_NO_PKG_CONFIG=1 #749381
 	if tc-is-cross-compiler; then
 		use system-llvm && die "USE=system-llvm not allowed when cross-compiling"
@@ -271,7 +284,7 @@ pkg_setup() {
 	rust_pkg_setup
 
 	if use system-llvm; then
-		llvm-r1_pkg_setup
+		llvm-r2_pkg_setup
 
 		local llvm_config="$(get_llvm_prefix)/bin/llvm-config"
 		export LLVM_LINK_SHARED=1
@@ -323,8 +336,9 @@ src_unpack() {
 		# to ensure that all dependencies are present and up-to-date
 		mkdir "${S}/vendor" || die
 		# This also compiles the 'build helper', there's no way to avoid this.
-		${EPYTHON} "${S}"/x.py vendor -v --config="${T}"/vendor-bootstrap.toml -j$(makeopts_jobs) ||
-			die "Failed to vendor dependencies"
+		${EPYTHON} "${S}"/x.py vendor -v --config="${T}"/vendor-bootstrap.toml \
+			-j$(get_makeopts_jobs) ||
+				die "Failed to vendor dependencies"
 		# TODO: This has to be generated somehow, this is from a 1.84.x tarball I had lying around.
 		cat <<- _EOF_ > "${S}/.cargo/config.toml"
 			[source.crates-io]
@@ -363,16 +377,66 @@ src_prepare() {
 src_configure() {
 	if tc-is-cross-compiler; then
 		export PKG_CONFIG_ALLOW_CROSS=1
-		export PKG_CONFIG_PATH="${ESYSROOT}/usr/$(get_libdir)/pkgconfig"
-		export OPENSSL_INCLUDE_DIR="${ESYSROOT}/usr/include"
-		export OPENSSL_LIB_DIR="${ESYSROOT}/usr/$(get_libdir)"
+
+		local rust_host_triple="$(rust_abi "${CHOST}")"
+
+		# https://docs.rs/pkg-config/latest/pkg_config/#cross-compilation
+		local pcvar
+		for pcvar in PKG_CONFIG_{PATH,LIBDIR} ; do
+			pcvar="${pcvar}_${rust_host_triple//-/_}"
+
+			[[ -n ${!pcvar} ]] && continue
+
+			case ${pcvar} in
+				*PKG_CONFIG_PATH*)
+					printf -v "${pcvar}" "${ESYSROOT}/usr/$(get_libdir)/pkgconfig"
+					;;
+				*PKG_CONFIG_LIBDIR*)
+					printf -v "${pcvar}" "${ESYSROOT}/usr/$(get_libdir)"
+					;;
+				*)
+					continue
+					;;
+			esac
+
+			export "${pcvar}"
+		done
+
+		# https://docs.rs/openssl/latest/openssl/#manual
+		local osslvar
+		for osslvar in OPENSSL_{INCLUDE_,LIB_,}DIR ; do
+			osslvar="${rust_host_triple}_${osslvar}"
+			osslvar="${osslvar^^}"
+			osslvar="${osslvar//-/_}"
+
+			[[ -n ${!osslvar} ]] && continue
+
+			case ${osslvar} in
+				*OPENSSL_DIR*)
+					printf -v "${osslvar}" "${ESYSROOT}/usr"
+					;;
+				*OPENSSL_INCLUDE_DIR*)
+					printf -v "${osslvar}" "${ESYSROOT}/usr/include"
+					;;
+				*OPENSSL_LIB_DIR*)
+					printf -v "${osslvar}" "${ESYSROOT}/usr/$(get_libdir)"
+					;;
+				*)
+					continue
+					;;
+			esac
+
+			export "${osslvar}"
+		done
+
+		# https://issues.chromium.org/issues/357917328
+		# https://github.com/rust-lang/libz-sys/blob/1.1.18/build.rs#L25
+		export LIBZ_SYS_STATIC=1
 	fi
 
 	# Avoid bundled copies of libraries
 	export RUSTONIG_SYSTEM_LIBONIG=1
-	# Need to check if these can be optional
-	#export LIBSQLITE3_SYS_USE_PKG_CONFIG=1
-	#export LIBSSH2_SYS_USE_PKG_CONFIG=1
+	export LIBSQLITE3_SYS_USE_PKG_CONFIG=1
 
 	filter-lto # https://bugs.gentoo.org/862109 https://bugs.gentoo.org/866231
 
@@ -587,9 +651,23 @@ src_configure() {
 	done
 	if use rust_sysroots_wasm; then
 		wasm_target="wasm32-unknown-unknown"
-		export CFLAGS_${wasm_target//-/_}="$(filter-flags '-mcpu*' '-march*' '-mtune*'; echo "$CFLAGS")"
+		if tc-is-clang; then
+			local wasm_cc=$(tc-getCC)
+			local wasm_cxx=$(tc-getCXX)
+		else
+			local wasm_cc=${CHOST}-clang
+			local wasm_cxx=${CHOST}-clang++
+		fi
+		export CFLAGS_${wasm_target//-/_}="$(
+			CC="${wasm_cc} --target=wasm32-unknown-unknown"
+			filter-flags '-mcpu*' '-march*' '-mtune*'
+			strip-unsupported-flags
+			echo "${CFLAGS}"
+		)"
 		cat <<- _EOF_ >> "${S}"/bootstrap.toml
 			[target.wasm32-unknown-unknown]
+			cc = "${wasm_cc}"
+			cxx = "${wasm_cxx}"
 			linker = "$(usex system-llvm lld rust-lld)"
 			# wasm target does not have profiler_builtins https://bugs.gentoo.org/848483
 			profiler = false
@@ -654,6 +732,12 @@ src_configure() {
 				musl-root = "$(${cross_toolchain}-gcc -print-sysroot)/usr"
 			_EOF_
 		fi
+		if [[ "${cross_rust_target}" == *-uefi ]]; then
+			# Profiler is not supported on bare-metal
+			cat <<- _EOF_ >> "${S}"/bootstrap.toml
+				profiler = false
+			_EOF_
+		fi
 
 		# append cross target to "normal" target list
 		# example 'target = ["powerpc64le-unknown-linux-gnu"]'
@@ -695,7 +779,8 @@ src_configure() {
 
 src_compile() {
 	# -v will show invocations, -vv "very verbose" is overkill, -vvv "very very verbose" is insane
-	RUST_BACKTRACE=1 "${EPYTHON}" ./x.py build -v --config="${S}"/bootstrap.toml -j$(makeopts_jobs) || die
+	RUST_BACKTRACE=1 "${EPYTHON}" ./x.py build -v \
+		--config="${S}"/bootstrap.toml -j$(get_makeopts_jobs) || die
 }
 
 src_test() {
@@ -703,18 +788,25 @@ src_test() {
 
 	# those are basic and codegen tests.
 	local tests=(
-		codegen
 		codegen-units
-		compile-fail
+		crashes
+		codegen-llvm
 		incremental
 		mir-opt
 		pretty
 		run-make
+		run-make-cargo
+	)
+
+	# tests for standard and core library
+	local std_tests=(
+		std
+		core
 	)
 
 	# fails if llvm is not built with ALL targets.
 	# and known to fail with system llvm sometimes.
-	use system-llvm || tests+=( assembly )
+	use system-llvm || tests+=( assembly-llvm )
 
 	# fragile/expensive/less important tests
 	# or tests that require extra builds
@@ -725,19 +817,18 @@ src_test() {
 			rustdoc-js
 			rustdoc-js-std
 			rustdoc-ui
-			run-make-fulldeps
 			ui
 			ui-fulldeps
 		)
 	fi
 
 	local i failed=()
-	einfo "rust_src_test: enabled tests ${tests[@]/#/src/test/}"
-	for i in "${tests[@]}"; do
-		local t="src/test/${i}"
+	einfo "rust_src_test: enabled tests ${tests[@]} ${std_tests[@]}"
+	for i in "tests/${tests[@]}" "library/${std_tests[@]}"; do
+		local t="${i}"
 		einfo "rust_src_test: running ${t}"
 		if ! RUST_BACKTRACE=1 "${EPYTHON}" ./x.py test -vv --config="${S}"/bootstrap.toml \
-				-j$(makeopts_jobs) --no-doc --no-fail-fast "${t}"
+				-j$(get_makeopts_jobs) --no-doc --no-fail-fast "${t}"
 		then
 				failed+=( "${t}" )
 				eerror "rust_src_test: ${t} failed"
@@ -751,7 +842,8 @@ src_test() {
 }
 
 src_install() {
-	DESTDIR="${D}" "${EPYTHON}" ./x.py install -v --config="${S}"/bootstrap.toml -j$(makeopts_jobs) || die
+	DESTDIR="${D}" "${EPYTHON}" ./x.py install -v \
+		--config="${S}"/bootstrap.toml -j$(get_makeopts_jobs) || die
 
 	docompress /usr/lib/${PN}/${SLOT}/share/man/
 
@@ -782,7 +874,7 @@ src_install() {
 		# we need realpath on /usr/bin/* symlink return version-appended binary path.
 		# so /usr/bin/rustc should point to /usr/lib/rust/<ver>/bin/rustc-<ver>
 		# need to fix eselect-rust to remove this hack.
-		local ver_i="${i}-${RUST_PV}"
+		local ver_i="${i}-${RUST_PV%%_*}"
 		if [[ -f "${ED}/usr/lib/${PN}/${SLOT}/bin/${i}" ]]; then
 			einfo "Installing ${i} symlink"
 			ln -v "${ED}/usr/lib/${PN}/${SLOT}/bin/${i}" "${ED}/usr/lib/${PN}/${SLOT}/bin/${ver_i}" || die
@@ -842,7 +934,8 @@ src_install() {
 	doins "${T}/provider-${PN}-${SLOT}"
 
 	if use dist; then
-		"${EPYTHON}" ./x.py dist -v --config="${S}"/bootstrap.toml -j$(makeopts_jobs) || die
+		"${EPYTHON}" ./x.py dist -v --config="${S}"/bootstrap.toml \
+			-j$(get_makeopts_jobs) || die
 		insinto "/usr/lib/${PN}/${SLOT}/dist"
 		doins -r "${S}/build/dist/."
 	fi

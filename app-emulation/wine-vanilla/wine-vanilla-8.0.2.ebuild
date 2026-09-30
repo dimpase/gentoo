@@ -1,4 +1,4 @@
-# Copyright 2022-2025 Gentoo Authors
+# Copyright 2022-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -28,7 +28,7 @@ HOMEPAGE="
 LICENSE="LGPL-2.1+ BSD-2 IJG MIT OPENLDAP ZLIB gsm libpng2 libtiff"
 SLOT="${PV}"
 IUSE="
-	+X +abi_x86_32 +abi_x86_64 +alsa capi crossdev-mingw cups +dbus dos
+	+X +abi_x86_32 +abi_x86_64 +alsa crossdev-mingw cups +dbus dos
 	llvm-libunwind custom-cflags +fontconfig +gecko gphoto2 +gstreamer
 	kerberos +mingw +mono netapi nls odbc opencl +opengl pcap perl
 	pulseaudio samba scanner +sdl selinux +ssl +strip +truetype udev
@@ -76,7 +76,6 @@ WINE_COMMON_DEPEND="
 		x11-libs/libXext[${MULTILIB_USEDEP}]
 	)
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
-	capi? ( net-libs/libcapi:=[${MULTILIB_USEDEP}] )
 	gphoto2? ( media-libs/libgphoto2:=[${MULTILIB_USEDEP}] )
 	gstreamer? (
 		dev-libs/glib:2[${MULTILIB_USEDEP}]
@@ -117,6 +116,7 @@ DEPEND="
 	${WINE_COMMON_DEPEND}
 	sys-kernel/linux-headers
 	X? ( x11-base/xorg-proto )
+	opencl? ( dev-util/opencl-headers )
 "
 BDEPEND="
 	dev-lang/perl
@@ -215,7 +215,7 @@ src_configure() {
 		--disable-tests
 		$(use_with X x)
 		$(use_with alsa)
-		$(use_with capi)
+		--without-capi #977907
 		$(use_with cups)
 		$(use_with dbus)
 		$(use_with fontconfig)

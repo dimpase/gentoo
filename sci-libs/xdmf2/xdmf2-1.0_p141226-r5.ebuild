@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ SRC_URI="https://dev.gentoo.org/~jlec/distfiles/${P}.tar.xz"
 
 LICENSE="VTK"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~arm ~arm64 ~x86"
 IUSE="doc test"
 
 RESTRICT="!test? ( test )"
@@ -30,6 +30,8 @@ PATCHES=(
 	"${FILESDIR}"/${P}-module.patch
 	"${FILESDIR}"/${P}-cannot-find-hdf5-bug-591302.patch
 	"${FILESDIR}"/${P}-cmake-3.12.patch
+	"${FILESDIR}"/${P}-min_cmake.patch
+	"${FILESDIR}"/${P}-testFix.patch
 )
 
 src_prepare() {

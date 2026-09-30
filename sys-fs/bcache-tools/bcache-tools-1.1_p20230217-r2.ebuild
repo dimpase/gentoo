@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..13} )
+PYTHON_COMPAT=( python3_{10..14} )
 
 inherit flag-o-matic python-r1 toolchain-funcs udev vcs-snapshot
 
@@ -12,14 +12,14 @@ if [[ "${PV}" == "9999" ]]; then
 	EGIT_REPO_URI="https://git.kernel.org/pub/scm/linux/kernel/git/colyli/bcache-tools.git https://kernel.googlesource.com/pub/scm/linux/kernel/git/colyli/bcache-tools.git"
 else
 	SRC_URI="https://git.kernel.org/pub/scm/linux/kernel/git/colyli/${PN}.git/snapshot/a5e3753516bd39c431def86c8dfec8a9cea1ddd4.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="amd64 arm64 ~loong ppc ppc64 ~riscv x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="amd64 arm64 ~loong ppc ppc64 ~riscv x86"
 fi
 
 DESCRIPTION="Tools for bcache"
 HOMEPAGE="https://bcache.evilpiepirate.org/ https://git.kernel.org/pub/scm/linux/kernel/git/colyli/bcache-tools.git/"
+LICENSE="GPL-2"
 
 SLOT="0"
-LICENSE="GPL-2"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 

@@ -1,4 +1,4 @@
-# Copyright 2019-2025 Gentoo Authors
+# Copyright 2019-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: acct-group.eclass
@@ -8,7 +8,7 @@
 # @AUTHOR:
 # Michael Orlitzky <mjo@gentoo.org>
 # Michał Górny <mgorny@gentoo.org>
-# @SUPPORTED_EAPIS: 7 8
+# @SUPPORTED_EAPIS: 7 8 9
 # @BLURB: Eclass used to create and maintain a single group entry
 # @DESCRIPTION:
 # This eclass represents and creates a single group entry.  The name
@@ -37,11 +37,15 @@ if [[ -z ${_ACCT_GROUP_ECLASS} ]]; then
 _ACCT_GROUP_ECLASS=1
 
 case ${EAPI} in
-	7|8) ;;
+	7|8|9) ;;
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
 
 inherit user-info
+
+case ${EAPI} in
+	7|8) inherit edo ;;
+esac
 
 [[ ${CATEGORY} == acct-group ]] ||
 	die "Ebuild error: this eclass can be used only in acct-group category!"
@@ -78,9 +82,10 @@ ACCT_GROUP_NAME=${PN}
 # << Boilerplate ebuild variables >>
 : "${DESCRIPTION:="System group: ${ACCT_GROUP_NAME}"}"
 : "${SLOT:=0}"
-: "${KEYWORDS:=~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos ~x64-solaris}"
+: "${KEYWORDS:=~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos ~x64-solaris}"
 S=${WORKDIR}
 
+IDEPEND="!prefix? ( >=sys-apps/shadow-4.6 )"
 
 # << Phase functions >>
 
@@ -181,7 +186,7 @@ acct-group_pkg_preinst() {
 	fi
 
 	elog "Adding group ${ACCT_GROUP_NAME}"
-	groupadd "${opts[@]}" "${ACCT_GROUP_NAME}" || die "groupadd failed with status $?"
+	nonfatal edo groupadd "${opts[@]}" "${ACCT_GROUP_NAME}" || die "groupadd failed with status $?"
 }
 
 fi

@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ S="${WORKDIR}/${PN}-${MY_PV//_/-}"
 
 LICENSE="BSD"
 SLOT="0/$(ver_cut 1-2 "${MY_PV}")"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ppc ppc64 ~riscv ~s390 ~sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos"
 IUSE="doc static-libs tools test"
 RESTRICT="!test? ( test )"
 REQUIRED_USE="test? ( tools )"
@@ -60,6 +60,11 @@ src_configure() {
 	)
 
 	cmake_src_configure
+}
+
+src_test() {
+	local -x LD_LIBRARY_PATH="${BUILD_DIR}:${LD_LIBRARY_PATH}"
+	cmake_src_test
 }
 
 src_install() {

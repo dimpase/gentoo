@@ -1,11 +1,11 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 CMAKE_BUILD_TYPE=Release  # RelWithDebInfo enables debug logging
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{12..14} )
 PYTHON_REQ_USE="sqlite"
 
 # We only package the LTS releases right now
@@ -20,14 +20,14 @@ else
 		examples? ( https://qgis.org/downloads/data/qgis_sample_data.tar.gz -> qgis_sample_data-2.8.14.tar.gz )"
 	KEYWORDS="~amd64"
 fi
-inherit cmake flag-o-matic python-single-r1 xdg
+inherit cmake flag-o-matic optfeature python-single-r1 xdg
 
 DESCRIPTION="User friendly Geographic Information System"
 HOMEPAGE="https://www.qgis.org/"
 
 LICENSE="GPL-2+ GPL-3+"
 SLOT="0"
-IUSE="3d doc examples +georeferencer grass hdf5 mapserver netcdf opencl oracle pdal postgres python qml test webengine"
+IUSE="3d doc examples geographiclib +georeferencer grass hdf5 mapserver netcdf opencl oracle pdal postgres python qml test webengine"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	mapserver? ( python )
@@ -42,11 +42,11 @@ COMMON_DEPEND="
 	dev-cpp/abseil-cpp:=
 	>=dev-db/spatialite-4.2.0:=
 	dev-db/sqlite:3
-	dev-libs/expat
+	>=dev-libs/expat-1.95
 	dev-libs/libzip:=
 	dev-libs/protobuf:=
 	>=dev-libs/qtkeychain-0.14.1-r1:=[qt6(+)]
-	dev-qt/qtbase:6[concurrent,gui,network,sql,ssl,widgets,xml]
+	dev-qt/qtbase:6=[concurrent,gui,network,sql,ssl,widgets,xml]
 	dev-qt/qtmultimedia:6
 	dev-qt/qtpositioning:6
 	dev-qt/qtserialport:6
@@ -54,17 +54,19 @@ COMMON_DEPEND="
 	dev-qt/qttools:6[designer]
 	dev-vcs/git
 	media-gfx/exiv2:=
-	>=sci-libs/gdal-3.0.4:=[geos,spatialite,sqlite]
-	sci-libs/geos
+	net-print/cups
+	>=sci-libs/gdal-3.2.0:=[geos,spatialite,sqlite]
+	>=sci-libs/geos-3.9
 	sci-libs/libspatialindex:=
 	>=sci-libs/proj-8.1:=
 	virtual/zlib:=
 	>=dev-python/qscintilla-2.14.1-r1[qt6(+)]
 	>=x11-libs/qwt-6.2.0-r3:=[polar(+),qt6(+),svg(+)]
 	3d? ( dev-qt/qt3d:6 )
-	georeferencer? ( sci-libs/gsl:= )
+	georeferencer? ( >=sci-libs/gsl-1.8:= )
 	grass? ( sci-geosciences/grass:= )
 	hdf5? ( sci-libs/hdf5:= )
+	geographiclib? ( sci-geosciences/GeographicLib )
 	mapserver? ( dev-libs/fcgi )
 	netcdf? ( sci-libs/netcdf:= )
 	opencl? ( virtual/opencl )
@@ -76,18 +78,10 @@ COMMON_DEPEND="
 	postgres? ( dev-db/postgresql:= )
 	python? (
 		${PYTHON_DEPS}
-		|| (
-			(
-				$(python_gen_cond_dep '
-					sci-libs/gdal[python,${PYTHON_USEDEP}]
-				')
-			)
-			>=sci-libs/gdal-2.2.3[python,${PYTHON_SINGLE_USEDEP}]
-		)
 		$(python_gen_cond_dep '
 			dev-python/httplib2[${PYTHON_USEDEP}]
-			dev-python/jinja2[${PYTHON_USEDEP}]
 			dev-python/markupsafe[${PYTHON_USEDEP}]
+			dev-python/matplotlib[${PYTHON_USEDEP}]
 			dev-python/numpy[${PYTHON_USEDEP}]
 			dev-python/owslib[${PYTHON_USEDEP}]
 			dev-python/pygments[${PYTHON_USEDEP}]
@@ -98,11 +92,15 @@ COMMON_DEPEND="
 			dev-python/qscintilla[${PYTHON_USEDEP}]
 			dev-python/requests[${PYTHON_USEDEP}]
 			dev-python/sip:=[${PYTHON_USEDEP}]
+			sci-libs/gdal[python,${PYTHON_USEDEP}]
 			postgres? ( dev-python/psycopg:2[${PYTHON_USEDEP}] )
+			webengine? (
+				dev-python/pyqt6-webengine[${PYTHON_USEDEP}]
+				dev-python/pyqt6[webchannel]
+			)
 		')
 	)
 	qml? ( dev-qt/qtdeclarative:6 )
-	webengine? ( dev-qt/qtwebengine:6 )
 "
 DEPEND="${COMMON_DEPEND}
 	dev-cpp/nlohmann_json
@@ -111,14 +109,11 @@ DEPEND="${COMMON_DEPEND}
 		app-text/qpdf
 	) )
 "
-RDEPEND="${COMMON_DEPEND}
-	sci-geosciences/gpsbabel
-"
+RDEPEND="${COMMON_DEPEND}"
 BDEPEND="${PYTHON_DEPS}
 	app-alternatives/lex
 	app-alternatives/yacc
 	dev-qt/qttools:6[linguist]
-	doc? ( app-text/doxygen )
 	test? ( python? (
 		$(python_gen_cond_dep '
 			dev-python/mock[${PYTHON_USEDEP}]
@@ -132,7 +127,7 @@ BDEPEND="${PYTHON_DEPS}
 "
 
 PATCHES=(
-	"${FILESDIR}/${PN}-3.44.3-testReportDir.patch"
+	"${FILESDIR}/${PN}-4.0.2-testReportDir.patch"
 )
 
 src_prepare() {
@@ -171,21 +166,19 @@ src_configure() {
 
 		# -DQWT_INCLUDE_DIR=/usr/include/qwt6
 		# -DQWT_LIBRARY=/usr/$(get_libdir)/libqwt6-qt5.so
-		# -DQGIS_QML_SUBDIR=/usr/$(get_libdir)/qt5/qml
+		-DQGIS_QML_SUBDIR=/usr/$(get_libdir)/qml
 
 		-DPEDANTIC=OFF
 		-DUSE_CCACHE=OFF
 		-DUSE_PRECOMPILED_HEADERS=OFF
 		-DWITH_DRACO=OFF
-		-DWITH_QTWEBKIT=OFF
 		-DWITH_INTERNAL_NLOHMANN_JSON=OFF
-		-DBUILD_WITH_QT6=ON
 		-DWITH_ANALYSIS=ON
 		-DWITH_DESKTOP=ON
+		-DWITH_GEOGRAPHICLIB=$(usex geographiclib)
 		-DWITH_GUI=ON
 		-DWITH_INTERNAL_MDAL=ON # not packaged, bug 684538
 		-DWITH_QSPATIALITE=ON
-		-DWITH_QWTPOLAR=ON
 		-DWITH_3D=$(usex 3d)
 		-DWITH_APIDOC=$(usex doc)
 		-DENABLE_TESTS=$(usex test)
@@ -503,4 +496,5 @@ pkg_postinst() {
 	fi
 
 	xdg_pkg_postinst
+	optfeature "GPS data transfer and format conversion" sci-geosciences/gpsbabel
 }

@@ -1,7 +1,10 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
+
+# A fork is available at https://github.com/cpan-authors/Razor2-Client-Agent
+# but it's being heavily developed with Claude, so avoid at least for now.
 
 DIST_TEST="do parallel"
 inherit perl-module readme.gentoo-r1
@@ -16,7 +19,7 @@ S="${WORKDIR}/${MY_P}"
 
 LICENSE="Artistic"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm64 ~hppa ppc ppc64 ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm64 ~hppa ppc ppc64 ~sparc x86"
 IUSE="selinux"
 
 RDEPEND="

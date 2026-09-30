@@ -1,9 +1,10 @@
-# Copyright 2019-2025 Gentoo Authors
+# Copyright 2019-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-LLVM_COMPAT=( 21 )
+# https://codeberg.org/ziglang/zig/src/tag/${PV}#building-from-source
+LLVM_COMPAT=( 22 )
 LLVM_OPTIONAL=1
 
 ZIG_SLOT="$(ver_cut 1-2)"
@@ -74,9 +75,8 @@ DOCS=( "README.md" "doc/build.zig.zon.md" )
 # zig.eclass does not set this for us since we use ZIG_OPTIONAL=1
 QA_FLAGS_IGNORED="usr/.*/zig/${PV}/bin/zig"
 
-# Since commit https://codeberg.org/ziglang/zig/commit/e7d28344fa3ee81d6ad7ca5ce1f83d50d8502118
-# Zig uses self-hosted compiler only
-CHECKREQS_MEMORY="4G"
+# https://codeberg.org/ziglang/zig/src/tag/0.16.0/build.zig#L775-L778
+CHECKREQS_MEMORY="8G"
 
 pkg_setup() {
 	# Skip detecting zig executable.
@@ -130,11 +130,11 @@ src_configure() {
 	# and can't resolve native target, so we pass target in exact form.
 	declare -r -g ZIG_HOST_AS_TARGET="$(zig-utils_c_env_to_zig_target "${CBUILD:-${CHOST}}" "${CFLAGS}"})"
 
+	export ZIG_LIB_DIR="${S}/lib/"
+
 	# Note that if we are building with CMake, "my_zbs_args"
 	# are used only after compiling zig2.
 	local my_zbs_args=(
-		--zig-lib-dir "${S}/lib/"
-
 		--prefix "${EPREFIX}/${ZIG_SYS_INSTALL_DEST}/"
 		--prefix-lib-dir lib/
 
@@ -345,7 +345,7 @@ pkg_postinst() {
 
 	if ! use llvm; then
 		elog "Currently, Zig built without LLVM support lacks some"
-		elog "important features such as most optimizations, @cImport, etc."
+		elog "features such as optimizations, linker features, etc."
 		elog "They are listed under \"Building from Source without LLVM\""
 		elog "section of the README file from \"/usr/share/doc/${PF}\" ."
 	fi

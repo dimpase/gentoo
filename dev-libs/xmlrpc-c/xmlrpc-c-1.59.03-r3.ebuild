@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -16,7 +16,7 @@ SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tgz"
 
 LICENSE="BSD"
 SLOT="0/4.59"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~amd64-linux ~x86-linux ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~x64-solaris"
 IUSE="abyss +cgi +curl +cxx +libxml2 static-libs threads test"
 RESTRICT="!test? ( test )"
 REQUIRED_USE="test? ( abyss curl cxx )"
@@ -77,7 +77,8 @@ src_configure() {
 }
 
 src_compile() {
-	default
+	# bug #978431
+	emake -j1
 
 	# Tools building is broken in this release
 	#use tools && emake -rC "${S}"/tools

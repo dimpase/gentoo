@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -20,7 +20,7 @@ DESCRIPTION="Khronos reference front-end for GLSL and ESSL, and sample SPIR-V ge
 HOMEPAGE="https://www.khronos.org/opengles/sdk/tools/Reference-Compiler/ https://github.com/KhronosGroup/glslang"
 
 LICENSE="BSD"
-SLOT="0/16.1"
+SLOT="0/16.4"
 
 BDEPEND="${PYTHON_DEPS}
 	~dev-util/spirv-tools-${PV}[${MULTILIB_USEDEP}]
@@ -35,4 +35,12 @@ multilib_src_configure() {
 		-DALLOW_EXTERNAL_SPIRV_TOOLS=ON
 	)
 	cmake_src_configure
+}
+
+multilib_src_test() {
+	local CMAKE_SKIP_TESTS=(
+		# bug #977176 (https://github.com/KhronosGroup/glslang/issues/4180)
+		$(usev arm 'glslang-testsuite')
+	)
+	cmake_src_test
 }

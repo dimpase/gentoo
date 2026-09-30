@@ -1,10 +1,10 @@
-# Copyright 2021-2025 Gentoo Authors
+# Copyright 2021-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( pypy3_11 python3_{11..14} )
+PYTHON_COMPAT=( python3_{12..14} )
 
 inherit distutils-r1
 
@@ -22,7 +22,7 @@ S=${WORKDIR}/${MY_P}
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~s390 ~sparc ~x86"
+KEYWORDS="amd64 arm arm64 ~loong ppc64 ~riscv ~s390 ~sparc x86"
 
 RDEPEND="
 	dev-libs/boost
@@ -41,7 +41,6 @@ DEPEND="
 "
 BDEPEND="
 	test? (
-		dev-python/ipython[${PYTHON_USEDEP}]
 		dev-python/pip[${PYTHON_USEDEP}]
 		dev-python/packaging[${PYTHON_USEDEP}]
 		dev-python/scipy[${PYTHON_USEDEP}]
@@ -54,6 +53,10 @@ BDEPEND="
 EPYTEST_PLUGINS=()
 EPYTEST_XDIST=1
 distutils_enable_tests pytest
+
+PATCHES=(
+	"${FILESDIR}"/${P}-numpy-float128-tests.patch
+)
 
 src_configure() {
 	# vendored C++ headers -- use system copies
@@ -71,10 +74,21 @@ python_test() {
 		# multiple extra deps (meson, openblas)
 		# also broken on pypy3*
 		pythran/tests/test_distutils.py::TestMeson::test_meson_build
+		# numpy.distutils is dead and broken
+		pythran/tests/test_distutils.py::TestDistutils
+		# numpy changes
+		pythran/tests/test_numpy_func0.py::TestNumpyFunc0::test_cross1
+		pythran/tests/test_numpy_func0.py::TestNumpyFunc0::test_cross4
 	)
 	local EPYTEST_IGNORE=(
 		pythran/benchmarks
 	)
+
+	if ! has_version "dev-python/ipython[${PYTHON_USEDEP}]"; then
+		EPYTEST_IGNORE+=(
+			pythran/tests/test_ipython.py
+		)
+	fi
 
 	case ${ARCH} in
 		arm)

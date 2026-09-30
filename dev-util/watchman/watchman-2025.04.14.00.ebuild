@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Gentoo Authors
+# Copyright 2020-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -239,8 +239,9 @@ CRATES="
 "
 
 DISTUTILS_EXT=1
+DISTUTILS_OPTIONAL=1
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{10..13} )
+PYTHON_COMPAT=( python3_{11..13} )
 
 inherit cargo cmake distutils-r1 tmpfiles
 
@@ -276,8 +277,9 @@ RDEPEND="
 # TODO: Make gtest test-only (needs a fair bit of patching)
 DEPEND="
 	${RDEPEND}
-	test? ( dev-cpp/gtest )
+	dev-cpp/gtest
 "
+BDEPEND="python? ( ${DISTUTILS_DEPS} )"
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-2022.02.28.00-libatomic.patch

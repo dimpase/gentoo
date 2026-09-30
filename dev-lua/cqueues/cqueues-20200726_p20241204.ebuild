@@ -1,4 +1,4 @@
-# Copyright 2024-2025 Gentoo Authors
+# Copyright 2024-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -94,20 +94,21 @@ lua_src_compile() {
 		LUA_VERSION="5.1"
 	fi
 
-	emake CC=$(tc-getCC) \
+	emake CFLAGS="${CFLAGS} $(lua_get_CFLAGS)" \
 		all${LUA_VERSION}
 
 	popd || die
 }
 
 src_compile() {
+	tc-export CC AR RANLIB
 	lua_foreach_impl lua_src_compile
 }
 
 lua_src_test() {
 	pushd "${BUILD_DIR}" || die
 
-	emake CC=$(tc-getCC) check
+	emake check
 
 	popd || die
 }
@@ -125,8 +126,7 @@ lua_src_install() {
 		LUA_VERSION="5.1"
 	fi
 
-	emake CC=$(tc-getCC) \
-		"DESTDIR=${D}" \
+	emake "DESTDIR=${D}" \
 		"lua${LUA_VERSION/./}cpath=$(lua_get_cmod_dir)" \
 		"lua${LUA_VERSION/./}path=$(lua_get_lmod_dir)" \
 		"prefix=${EPREFIX}/usr" \

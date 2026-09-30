@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ SRC_URI="https://archive.xfce.org/src/apps/${PN}/${PV%.*}/${P}.tar.xz"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="amd64 arm ~hppa ppc ppc64 ~riscv ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 arm ~hppa ppc ppc64 ~riscv ~sparc x86"
 
 DEPEND="
 	>=dev-libs/glib-2.66.0
@@ -29,7 +29,7 @@ RDEPEND="
 # dev-libs/glib for glib-compile-resources
 BDEPEND="
 	>=dev-libs/glib-2.66.0
-	dev-util/gdbus-codegen
+	>=dev-util/gdbus-codegen-2.80.5-r1
 	virtual/pkgconfig
 "
 

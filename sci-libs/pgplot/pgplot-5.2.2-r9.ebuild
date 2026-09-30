@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ S="${WORKDIR}/${PN}"
 
 LICENSE="free-noncomm"
 SLOT="0"
-KEYWORDS="amd64 ~arm ~ppc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~arm ~ppc ~x86"
 IUSE="doc motif static-libs tk"
 
 RDEPEND="
@@ -79,6 +79,7 @@ src_configure() {
 	# bug #722190
 	append-fflags $(test-flags-FC -fallow-argument-mismatch)
 
+	append-cflags -std=gnu89
 	./makemake . linux
 	# post makefile creation prefix hack
 	sed -i -e "s|/usr|${EPREFIX}/usr|g" makefile || die

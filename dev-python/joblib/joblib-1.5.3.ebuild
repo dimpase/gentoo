@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{12..14} )
 PYPI_VERIFY_REPO=https://github.com/joblib/joblib
 DISTUTILS_USE_PEP517=setuptools
 
@@ -18,7 +18,7 @@ HOMEPAGE="
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86 ~arm64-macos ~x64-macos"
+KEYWORDS="amd64 ~arm arm64 ~loong ~ppc ppc64 ~riscv x86 ~arm64-macos ~x64-macos"
 
 RDEPEND="
 	dev-python/cloudpickle[${PYTHON_USEDEP}]

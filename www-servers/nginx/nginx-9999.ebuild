@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -22,11 +22,21 @@ NGINX_MODULES=(
 NGINX_UPDATE_STREAM=live
 NGINX_TESTS_COMMIT=live
 NGINX_MISC_FILES=(
-	nginx-{r2.logrotate,r2.service,r4.conf,r6.initd,r1.confd,r1.tmpfiles}
+	nginx-{r2.logrotate,r2.service,r5.conf,r6.initd,r1.confd,r1.tmpfiles}
 )
+NGINX_SUPPORT_MODULE_STUBS=1
 
 inherit nginx
 
 PATCHES=(
 	"${FILESDIR}/${PN}-httpoxy-mitigation-r1.patch"
 )
+
+src_prepare() {
+	nginx_src_prepare
+
+	if use test ; then
+		# Fails with network-sandbox (bug #976129)
+		rm "${NGX_TESTS_S}"/tunnel_next_upstream.t || die
+	fi
+}

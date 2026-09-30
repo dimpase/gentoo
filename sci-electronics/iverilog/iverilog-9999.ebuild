@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -9,7 +9,7 @@ GITHUB_PV=$(ver_rs 1- '_')
 
 DESCRIPTION="A Verilog simulation and synthesis tool"
 HOMEPAGE="
-	http://iverilog.icarus.com
+	https://steveicarus.github.io/iverilog/
 	https://github.com/steveicarus/iverilog
 "
 
@@ -22,7 +22,7 @@ else
 	S="${WORKDIR}/${PN}-${GITHUB_PV}"
 fi
 
-LICENSE="LGPL-2.1"
+LICENSE="GPL-2+"
 SLOT="0"
 
 DEPEND="
@@ -32,8 +32,8 @@ DEPEND="
 RDEPEND="${DEPEND}"
 BDEPEND="
 	dev-util/gperf
-	app-alternatives/yacc
-	app-alternatives/lex
+	sys-devel/bison
+	sys-devel/flex
 "
 
 src_prepare() {

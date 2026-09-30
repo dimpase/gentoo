@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 DISTUTILS_USE_PEP517="standalone"
 DISTUTILS_EXT=1
 
@@ -16,7 +16,7 @@ S="${WORKDIR}"/${PN}-open-source-${PV}
 
 LICENSE="BitstreamVera BSD freedist HPND MIT-0 OFL-1.0 public-domain UoI-NCSA" #844991
 SLOT="0"
-KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux ~x64-macos"
+KEYWORDS="~amd64 ~x86 ~x64-macos"
 IUSE="+netcdf web"
 
 DEPEND="

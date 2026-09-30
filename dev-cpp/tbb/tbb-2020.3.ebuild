@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -14,7 +14,7 @@ HOMEPAGE="https://github.com/oneapi-src/oneTBB"
 SRC_URI="https://github.com/intel/${PN}/archive/${MY_PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="Apache-2.0"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ppc ppc64 ~riscv ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ppc ppc64 ~riscv ~sparc x86"
 IUSE="debug examples"
 
 S="${WORKDIR}/oneTBB-${MY_PV}"
@@ -24,6 +24,7 @@ DOCS=( CHANGES README README.md doc/Release_Notes.txt )
 PATCHES=(
 	"${FILESDIR}"/${PN}-2020.1-makefile-debug.patch
 	"${FILESDIR}"/${PN}-2020.3-gcc13.patch
+	"${FILESDIR}"/${PN}-2020.3-musl.patch
 )
 
 src_prepare() {

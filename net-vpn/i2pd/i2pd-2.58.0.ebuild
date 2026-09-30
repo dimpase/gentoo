@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ SRC_URI="https://github.com/PurpleI2P/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~sparc ~x86"
+KEYWORDS="amd64 ~arm ~arm64 ~ppc ~ppc64 ~sparc ~x86"
 IUSE="test +upnp"
 RESTRICT="!test? ( test )"
 
@@ -34,6 +34,8 @@ RDEPEND="
 CMAKE_USE_DIR="${WORKDIR}/${P}/build"
 
 DOCS=( ../README.md ../contrib/i2pd.conf ../contrib/tunnels.conf )
+
+PATCHES=( "${FILESDIR}"/i2pd-2.58.0-boost-1.89.patch )
 
 src_configure() {
 	local mycmakeargs=(

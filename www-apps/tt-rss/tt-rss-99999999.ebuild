@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -21,7 +21,7 @@ HOMEPAGE="https://github.com/tt-rss/"
 LICENSE="GPL-3"
 IUSE="+acl daemon gd"
 
-PHP_SLOTS="8.4 8.3 8.2" # Check with: grep PHP_VERSION classes/Config.php
+PHP_SLOTS="8.5 8.4 8.3 8.2" # min_ver: PHP_VERSION classes/Config.php / current_ver: PHP_SUFFIX .docker/app/Dockerfile
 PHP_USE="gd?,postgres,ctype,curl,fileinfo,filter,intl,pdo,tokenizer,unicode,xml"
 
 php_rdepend() {
@@ -104,12 +104,12 @@ src_install() {
 	keepdir "${MY_HTDOCSDIR}"/cache/{feed-icons,starred-images}
 
 	local dir
-	for dir in "${ED}${MY_HTDOCSDIR}"/{cache/*,feed-icons,lock}/; do
+	for dir in "${ED}${MY_HTDOCSDIR}"/{cache/*,lock}/; do
 		webapp_serverowned "${dir#${ED}}"
 	done
 
 	if use daemon; then
-		webapp_hook_script "${FILESDIR}"/permissions-r1
+		webapp_hook_script "${FILESDIR}"/permissions-r2
 		webapp_postinst_txt en "${FILESDIR}"/postinstall-en-with-daemon-r1.txt
 
 		newinitd "${FILESDIR}"/ttrssd.initd-r4 ttrssd

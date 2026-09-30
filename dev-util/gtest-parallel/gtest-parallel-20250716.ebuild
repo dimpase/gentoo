@@ -1,9 +1,9 @@
-# Copyright 2025 Gentoo Authors
+# Copyright 2025-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..14} )
+PYTHON_COMPAT=( python3_{12..15} )
 inherit python-r1
 
 DESCRIPTION="Run Google Test suites in parallel"
@@ -17,7 +17,7 @@ S="${WORKDIR}/${PN}-${MY_COMMIT}"
 
 LICENSE="Apache-2.0"
 SLOT="0"
-KEYWORDS="amd64 ~arm64"
+KEYWORDS="amd64 arm64"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 

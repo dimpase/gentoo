@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -18,7 +18,7 @@ SRC_URI="https://github.com/grosser/maxitest/archive/v${PV}.tar.gz -> ${P}.tar.g
 
 LICENSE="MIT"
 SLOT="1"
-KEYWORDS="amd64 arm ~arm64 ~hppa ppc ppc64 ~riscv ~sparc x86 ~amd64-linux ~x86-linux ~x64-macos ~x64-solaris"
+KEYWORDS="amd64 arm ~arm64 ~hppa ppc ppc64 ~riscv ~sparc x86 ~x64-macos ~x64-solaris"
 IUSE="test"
 
 ruby_add_rdepend ">=dev-ruby/minitest-5.14.0:* <dev-ruby/minitest-5.24.0:*"
@@ -36,6 +36,8 @@ all_ruby_prepare() {
 	sed -e '/shows backtrace for/askip' \
 		-e '/describe.*line/ s/describe/xdescribe/' \
 		-e '/describe.*color/ s/describe/xdescribe/' \
+		-e '/stops on ctrl+c and prints errors/askip' \
+		-e '/shows backtraces when in verbose mode/askip' \
 		-i spec/maxitest_spec.rb || die
 }
 

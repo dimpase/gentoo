@@ -1,16 +1,16 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit bash-completion-r1 elisp-common llvm.org multilib
+inherit elisp-common llvm.org multilib shell-completion
 
 DESCRIPTION="Common files shared between multiple slots of clang"
 HOMEPAGE="https://llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~arm64-macos ~x64-macos"
+KEYWORDS="amd64 arm arm64 ~loong ~mips ppc ppc64 ~riscv ~sparc x86 ~arm64-macos ~x64-macos"
 IUSE="
 	default-compiler-rt default-libcxx default-lld
 	bootstrap-prefix cet emacs hardened llvm-libunwind
@@ -251,6 +251,7 @@ src_install() {
 	# elif __GENTOO_HAS_FEATURE(numerical_stability_sanitizer)
 	# elif __GENTOO_HAS_FEATURE(realtime_sanitizer)
 	# elif __GENTOO_HAS_FEATURE(thread_sanitizer)
+	# elif defined(_GENTOO_NO_FORTIFY_SOURCE)
 	# else
 	#  define _FORTIFY_SOURCE ${fortify_level}
 	# endif

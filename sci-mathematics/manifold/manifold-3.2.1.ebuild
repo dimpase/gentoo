@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{12..14} )
 inherit cmake python-single-r1
 
 DESCRIPTION="Geometry library for topological robustness"
@@ -21,7 +21,7 @@ else
 		SRC_URI="https://github.com/elalish/manifold/releases/download/v${PV}/${P}.tar.gz"
 	fi
 
-	KEYWORDS="~amd64 ~arm64 ~x86"
+	KEYWORDS="amd64 ~arm64 ~x86"
 fi
 
 LICENSE="Apache-2.0"

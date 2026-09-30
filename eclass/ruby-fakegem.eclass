@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: ruby-fakegem.eclass
@@ -224,7 +224,7 @@ ruby_fakegem_gemsdir() {
 
 	local _gemsitedir=$(ruby_rbconfig_value 'sitelibdir')
 	_gemsitedir=${_gemsitedir//site_ruby/gems}
-	_gemsitedir=${_gemsitedir#${EPREFIX}}
+	_gemsitedir=${_gemsitedir#"${EPREFIX}"}
 
 	[[ -z ${_gemsitedir} ]] && {
 		eerror "Unable to find the gems dir"
@@ -661,7 +661,7 @@ all_fakegem_install() {
 
 	# binary wrappers; we assume that all the implementations get the
 	# same binaries, or something is wrong anyway, so...
-	if [[ -n ${RUBY_FAKEGEM_BINWRAP} ]]; then
+	if [[ -n ${RUBY_FAKEGEM_BINDIR} && -n ${RUBY_FAKEGEM_BINWRAP} ]]; then
 		local bindir=$(find "${D}" -type d -path "*/gems/${RUBY_FAKEGEM_NAME}-${RUBY_FAKEGEM_VERSION}/${RUBY_FAKEGEM_BINDIR}" -print -quit)
 
 		if [[ -d "${bindir}" ]]; then

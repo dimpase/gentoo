@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit toolchain-funcs
+inherit dot-a toolchain-funcs
 
 MY_TESTDATA_COMMIT="381b447563f9bef87b218ebbedde3159afdc3032"
 
@@ -15,7 +15,7 @@ S="${WORKDIR}/snowball-${PV}"
 
 LICENSE="BSD"
 SLOT="0/$(ver_cut 1)"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86"
 IUSE="static-libs test"
 
 BDEPEND="dev-lang/perl
@@ -27,7 +27,15 @@ PATCHES=(
 	"${FILESDIR}/${P}-shared-library.patch"
 )
 
+src_configure() {
+	use static-libs && lto-guarantee-fat
+	default
+}
+
 src_compile() {
+	# 947412
+	tc-is-cross-compiler && tc-env_build emake snowball
+
 	tc-export CC AR
 	default
 }
@@ -47,5 +55,8 @@ src_install() {
 	dolib.so libstemmer.so.$(ver_cut 1)
 	dolib.so libstemmer.so
 
-	use static-libs && dolib.a libstemmer.a
+	if use static-libs; then
+		dolib.a libstemmer.a
+		strip-lto-bytecode
+	fi
 }

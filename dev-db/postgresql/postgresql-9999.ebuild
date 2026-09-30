@@ -1,13 +1,13 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 PYTHON_COMPAT=( python3_{11..14} )
-LLVM_COMPAT=( {15..21} )
+LLVM_COMPAT=( {16..23} )
 LLVM_OPTIONAL=1
 
-inherit dot-a flag-o-matic linux-info llvm-r1 meson pam python-single-r1 \
+inherit dot-a flag-o-matic linux-info llvm-r2 meson pam python-single-r1 \
 		systemd tmpfiles
 
 DESCRIPTION="PostgreSQL RDBMS"
@@ -20,7 +20,7 @@ if [[ $PV = *9999* ]] ; then
 	inherit git-r3
 	EGIT_REPO_URI="https://git.postgresql.org/git/postgresql.git"
 else
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~x64-macos ~x64-solaris"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~x64-macos ~x64-solaris"
 
 	MY_PV=${PV/_/}
 	SRC_URI="https://ftp.postgresql.org/pub/source/v${MY_PV}/postgresql-${MY_PV}.tar.bz2"
@@ -101,10 +101,9 @@ RDEPEND="${CDEPEND}
 selinux? ( sec-policy/selinux-postgresql )
 "
 
-# Openjade, docbook, XML, and XSLT are needed to generate manpages and
+# Docbook, XML, and XSLT are needed to generate manpages and
 # any documentation that may be elected.
 BDEPEND="
-app-text/openjade
 app-text/docbook-dsssl-stylesheets
 app-text/docbook-sgml-dtd:4.5
 app-text/docbook-xml-dtd:4.5
@@ -122,7 +121,7 @@ test? (
 pkg_setup() {
 	CONFIG_CHECK="~SYSVIPC" linux-info_pkg_setup
 
-	use llvm && llvm-r1_pkg_setup
+	use llvm && llvm-r2_pkg_setup
 	use python && python-single-r1_pkg_setup
 }
 

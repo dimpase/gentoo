@@ -16,7 +16,7 @@ S="${WORKDIR}/Trilinos-${PN}-release-${MY_PV}"
 
 LICENSE="BSD LGPL-2.1"
 SLOT="0/${PV}"
-KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86"
 
 IUSE="
 	adolc all-packages arprec clp cuda eigen glpk gtest hdf5 hwloc hypre
@@ -37,8 +37,8 @@ RDEPEND="
 	adolc? ( sci-libs/adolc )
 	arprec? ( sci-libs/arprec )
 	clp? ( sci-libs/coinor-clp )
-	cuda? ( >=dev-util/nvidia-cuda-toolkit-3.2 )
-	eigen? ( dev-cpp/eigen:3 )
+	cuda? ( dev-util/nvidia-cuda-toolkit:= )
+	eigen? ( dev-cpp/eigen:= )
 	glpk? ( sci-mathematics/glpk )
 	gtest? ( dev-cpp/gtest )
 	hdf5? ( sci-libs/hdf5:=[mpi] )

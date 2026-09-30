@@ -3,7 +3,7 @@
 
 EAPI=8
 
-USE_RUBY="ruby32 ruby33 ruby34"
+USE_RUBY="ruby32 ruby33 ruby34 ruby40"
 
 RUBY_FAKEGEM_EXTRADOC="CHANGES.md README.md"
 RUBY_FAKEGEM_DOCDIR="doc"
@@ -21,7 +21,7 @@ SRC_URI="https://github.com/ruby/json/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="|| ( BSD-2 Ruby )"
 
 SLOT="$(ver_cut 1)"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
 IUSE="doc test"
 
 DEPEND="dev-util/ragel"
@@ -50,4 +50,8 @@ all_ruby_prepare() {
 
 	# Avoid setting gem since it will not be available yet when installing
 	sed -i -e '/gem/ s:^:#:' test/json/test_helper.rb || die
+
+	# Avoid coverage dependencies
+	sed -e 's/JSON_COVERAGE/NO_JSON_COVERAGE/' \
+		-i test/json/test_helper.rb || die
 }

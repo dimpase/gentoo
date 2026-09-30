@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,7 +12,7 @@ HOMEPAGE="https://libcxx.llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~loong ~riscv ~sparc ~x86 ~arm64-macos ~x64-macos"
+KEYWORDS="amd64 arm arm64 ~loong ~riscv ~sparc x86 ~arm64-macos ~x64-macos"
 IUSE="+clang +libcxxabi +static-libs test"
 REQUIRED_USE="test? ( clang )"
 RESTRICT="!test? ( test )"
@@ -145,6 +145,12 @@ multilib_src_configure() {
 		# this is broken with standalone builds, and also meaningless
 		-DLIBCXXABI_USE_LLVM_UNWINDER=OFF
 	)
+	if ! has_version -b sys-devel/gcc; then
+		# Since this package is merged before llvm-runtimes/clang-stdlib-config,
+		# clang will attempt to use libstdc++ for the C++ compiler check, and will
+		# fail if it is missing.
+		mycmakeargs+=( -DCMAKE_CXX_COMPILER_WORKS=1 )
+	fi
 	if is_crosspkg; then
 		# Needed to target built libc headers
 		local -x CFLAGS="${CFLAGS} -isystem ${ESYSROOT}/usr/${CTARGET}/usr/include"
@@ -190,7 +196,7 @@ multilib_src_install() {
 	# since we've replaced libc++.{a,so} with ldscripts, now we have to
 	# install the extra symlinks
 	if [[ ${CHOST} != *-darwin* ]] ; then
-		is_crosspkg && into /usr/${CTARGET}
+		is_crosspkg && into /usr/${CTARGET}/usr
 		dolib.so lib/libc++_shared.so
 		use static-libs && dolib.a lib/libc++_static.a
 	fi

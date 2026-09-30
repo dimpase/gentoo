@@ -1,8 +1,8 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_12 )
 
 DISTUTILS_USE_PEP517=setuptools
 inherit distutils-r1 pypi
@@ -25,7 +25,7 @@ RDEPEND="
 		)
 	)
 	mysql? ( dev-python/mysqlclient[${PYTHON_USEDEP}] )
-	postgres? ( dev-python/psycopg:0[${PYTHON_USEDEP}] )
+	postgres? ( dev-python/psycopg:2[${PYTHON_USEDEP}] )
 	pyjwt? ( dev-python/pyjwt[${PYTHON_USEDEP}] )
 	sqlite? ( $(python_gen_impl_dep sqlite) )
 	ssl? ( dev-python/pyopenssl[${PYTHON_USEDEP}] )

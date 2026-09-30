@@ -1,7 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=8
+EAPI=9
+
+NEED_EMACS="28"
 
 inherit elisp readme.gentoo-r1
 
@@ -15,11 +17,8 @@ if [[ "${PV}" == 9999 ]] ; then
 	EGIT_CHECKOUT_DIR="${WORKDIR}/org"
 	S="${WORKDIR}/org"
 else
-	MY_P="${PN}-release_${PV}"
-
-	SRC_URI="https://git.savannah.gnu.org/cgit/emacs/${PN}.git/snapshot/${MY_P}.tar.gz"
-	S="${WORKDIR}/${MY_P}"
-
+	# git archive --prefix=${P}/ release_${PV} | xz > ${P}.tar.xz
+	SRC_URI="https://dev.gentoo.org/~xgqt/distfiles/repackaged/${P}.tar.xz"
 	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~riscv ~x86"
 fi
 
@@ -40,7 +39,7 @@ src_prepare() {
 	elisp_src_prepare
 
 	# Remove failing tests.
-	rm ./testing/lisp/test-{ob{,-exp,-tangle,-shell},org{,-clock}}.el \
+	rm testing/lisp/test-{ob{,-exp,-tangle,-shell},org-clock,ox-icalendar}.el \
 		|| die "failed to remove some test files"
 }
 

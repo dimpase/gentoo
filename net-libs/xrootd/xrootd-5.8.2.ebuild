@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -27,7 +27,7 @@ if [[ ${PV} =~ "9999" ]] ; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/xrootd/xrootd.git"
 else
-	KEYWORDS="amd64 x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="amd64 x86"
 	SRC_URI="https://xrootd.web.cern.ch/download/v${PV}/${P}.tar.gz"
 fi
 
@@ -51,7 +51,7 @@ CDEPEND="acct-group/xrootd
 		net-misc/curl:=
 		net-libs/davix
 	)
-	kerberos? ( virtual/krb5 )
+	kerberos? ( app-crypt/mit-krb5 )
 	libxml2? ( dev-libs/libxml2:2= )
 	macaroons? ( dev-libs/libmacaroons )
 	python? ( ${PYTHON_DEPS} )

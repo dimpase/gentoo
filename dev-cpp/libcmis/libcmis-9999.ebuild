@@ -1,14 +1,14 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=8
+EAPI=9
 
 if [[ ${PV} == *9999* ]]; then
 	EGIT_REPO_URI="https://github.com/tdf/libcmis.git"
 	inherit git-r3
 else
 	SRC_URI="https://github.com/tdf/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86"
 fi
 inherit autotools flag-o-matic
 
@@ -25,19 +25,14 @@ DEPEND="
 	dev-libs/libxml2:=
 	net-misc/curl
 "
-RDEPEND="
-	${DEPEND}
-	!dev-cpp/libcmis:0.5
-"
+RDEPEND="${DEPEND}"
 BDEPEND="
 	virtual/pkgconfig
 	man? (
-		app-text/docbook2X
+		app-text/xmlto
 		dev-libs/libxslt
 	)
-	test? (
-		dev-util/cppunit
-	)
+	test? ( dev-util/cppunit )
 "
 
 src_prepare() {

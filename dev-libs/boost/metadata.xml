@@ -53,6 +53,7 @@
 		<remote-id type="github">boostorg/coroutine</remote-id>
 		<remote-id type="github">boostorg/coroutine2</remote-id>
 		<remote-id type="github">boostorg/date_time</remote-id>
+		<remote-id type="github">boostorg/decimal</remote-id>
 		<remote-id type="github">boostorg/describe</remote-id>
 		<remote-id type="github">boostorg/detail</remote-id>
 		<remote-id type="github">boostorg/dll</remote-id>
@@ -105,6 +106,8 @@
 		<remote-id type="github">boostorg/multiprecision</remote-id>
 		<remote-id type="github">boostorg/mysql</remote-id>
 		<remote-id type="github">boostorg/nowide</remote-id>
+		<remote-id type="github">boostorg/numeric_conversion</remote-id>
+		<remote-id type="github">boostorg/openmethod</remote-id>
 		<remote-id type="github">boostorg/optional</remote-id>
 		<remote-id type="github">boostorg/outcome</remote-id>
 		<remote-id type="github">boostorg/parameter</remote-id>

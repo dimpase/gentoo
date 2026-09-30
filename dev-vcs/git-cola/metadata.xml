@@ -2,7 +2,7 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<maintainer type="person" proxied="yes">
-		<email>davidroman96@gmail.com</email>
+		<email>stkw0@disroot.org</email>
 		<name>David Roman</name>
 	</maintainer>
 	<maintainer type="person" proxied="yes">
@@ -15,5 +15,6 @@
 	</maintainer>
 	<upstream>
 		<remote-id type="github">git-cola/git-cola</remote-id>
+		<remote-id type="gitlab">git-cola/git-cola</remote-id>
 	</upstream>
 </pkgmetadata>

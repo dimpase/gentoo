@@ -1,5 +1,17 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
+
+# Sam James <sam@gentoo.org> (2026-04-28)
+# dev-cpp/cpp-httplib doesn't support 32-bit arches
+dev-util/ccache http
+
+# Robin H. Johnson <robbat2@gentoo.org> (2026-03-22)
+# sys-block/vdo not keyworded here
+sys-fs/lvm2 vdo
+
+# James Le Cuirot <chewi@gentoo.org> (2026-02-09)
+# There is almost certainly no m68k hardware that supports DDC.
+app-misc/fastfetch ddcutil
 
 # James Le Cuirot <chewi@gentoo.org> (2025-11-22)
 # gnuplot is not keyworded or tested.
@@ -26,7 +38,7 @@ dev-lang/python jit
 # USE=bpf depends on llvm-core/clang which is not keyworded on m68k
 media-libs/libv4l bpf
 
-# Violet Purcell <vimproved@inventati.org> (2023-10-12)
+# Violet Purcell <vi@vimproved.dev> (2023-10-12)
 # dev-build/samurai is not keyworded here.
 app-alternatives/ninja samurai
 
@@ -114,10 +126,6 @@ dev-python/numpy lapack
 # Patrick McLean <chutzpah@gentoo.org> (2020-02-15)
 # Mask until dev-libs/libfido2 is keyworded
 net-misc/openssh security-key
-
-# Sergei Trofimovich <slyfox@gentoo.org> (2019-12-02)
-# dev-debug/systemtap is not keyworded on m68k
-sys-libs/glibc systemtap
 
 # Sergei Trofimovich <slyfox@gentoo.org> (2019-12-02)
 # media-libs/gd is not keyworded on m68k

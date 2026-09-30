@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ S="${WORKDIR}/${PN}-v${PV}"
 
 LICENSE="CeCILL-2"
 SLOT="0/${SOVER}"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~ppc ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~ppc ppc64 ~riscv ~sparc ~x86"
 IUSE="doc int64 mpi static-libs test tools +threads"
 # bug #532620
 REQUIRED_USE="test? ( threads )"
@@ -24,6 +24,8 @@ DEPEND="
 	virtual/zlib:=
 	mpi? ( virtual/mpi )"
 RDEPEND="${DEPEND}"
+
+PATCHES=( "${FILESDIR}"/${PN}-7.0.1-fixtest.patch )
 
 static_to_shared() {
 	local libstatic=${1}; shift
@@ -57,6 +59,7 @@ src_prepare() {
 			-e 's/ -DSCOTCH_PTHREAD//' \
 			src/Make.inc/Makefile.inc.i686_pc_linux3 || die
 	fi
+	append-cflags "-D_GNU_SOURCE" # Fix build on musl bug #834726
 
 	# Be careful with replacing here, bug #577272
 	sed -e "s/= gcc$/= $(tc-getCC)/" \

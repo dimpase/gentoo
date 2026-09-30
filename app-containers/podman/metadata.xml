@@ -24,15 +24,18 @@
 	</longdescription>
 	<use>
 		<flag name="btrfs">
-			Enables btrfs support (graph driver) in Podman
+			Enable btrfs support (graph driver) in Podman
+		</flag>
+		<flag name="cron">
+			Installs cron script to automatically update running containers image to newest
 		</flag>
 		<flag name="wrapper">
-			Install wrapper which lets use podman for command `docker`
+			Install a wrapper to allow using `podman` as a drop-in replacement for `docker`
 		</flag>
 	</use>
 	<upstream>
-		<remote-id type="github">containers/podman</remote-id>
-		<bugs-to>https://github.com/containers/podman/issues</bugs-to>
+		<remote-id type="github">podman-container-tools/podman</remote-id>
+		<bugs-to>https://github.com/podman-container-tools/podman/issues</bugs-to>
 		<doc>https://podman.io/docs</doc>
 	</upstream>
 </pkgmetadata>

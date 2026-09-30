@@ -1,9 +1,9 @@
-# Copyright 2025 Gentoo Authors
+# Copyright 2025-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..14} )
+PYTHON_COMPAT=( python3_{12..15} )
 
 inherit git-r3 linux-info meson python-any-r1 systemd udev
 
@@ -25,6 +25,7 @@ RDEPEND="
 	${DEPEND}
 	acct-group/jobserver
 	acct-user/steve
+	>=sys-fs/fuse-common-3.10.4-r2
 "
 BDEPEND="
 	virtual/pkgconfig
@@ -81,12 +82,6 @@ src_install() {
 	insinto /etc/sandbox.d
 	newins data/sandbox.conf 90steve
 	udev_newrules data/steve.udev 90-steve.rules
-
-	# TODO: can we manage to get the correct cuse permissions otherwise?
-	insinto /usr/lib/modules-load.d
-	newins - steve.conf <<-EOF
-		cuse
-	EOF
 }
 
 pkg_postinst() {
@@ -96,7 +91,12 @@ pkg_postinst() {
 	then
 		elog "In order to use the system-wide steve instance, enable the service:"
 		elog
-		elog "  systemctl enable --now steve"
+		elog "  for OpenRC:"
+		elog "    rc-update add steve default"
+		elog "    /etc/init.d/steve start"
+		elog
+		elog "  for systemd:"
+		elog "    systemctl enable --now steve"
 		elog
 		elog "Then add to your make.conf:"
 		elog

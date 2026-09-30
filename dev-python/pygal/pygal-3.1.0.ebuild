@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -21,7 +21,7 @@ SRC_URI="
 
 LICENSE="LGPL-3+"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64 ~riscv ~x86"
+KEYWORDS="amd64 arm64 ~riscv x86"
 
 RDEPEND="
 	dev-python/importlib-metadata[${PYTHON_USEDEP}]
@@ -52,5 +52,5 @@ python_prepare_all() {
 
 pkg_postinst() {
 	optfeature "improving rendering speed" "dev-python/lxml"
-	optfeature "png rendering" "dev-python/cairosvg"
+	optfeature "png rendering" "media-gfx/cairosvg"
 }

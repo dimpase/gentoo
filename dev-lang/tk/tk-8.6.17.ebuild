@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -18,7 +18,7 @@ S="${SPARENT}"/unix
 
 LICENSE="tcltk"
 SLOT="0/8.6"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~x64-macos ~x64-solaris"
 IUSE="debug +threads truetype aqua xscreensaver"
 RESTRICT="!test? ( test )"
 
@@ -41,6 +41,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-8.6.9-conf.patch # Bug 125971
 	"${FILESDIR}"/${PN}-8.6.12-test.patch
 	"${FILESDIR}"/${PN}-8.6.14-test.patch
+	"${FILESDIR}"/${PN}-8.6.17-glibc-2.43.patch
 )
 
 QA_CONFIG_IMPL_DECL_SKIP=(
@@ -101,7 +102,8 @@ multilib_src_configure() {
 }
 
 multilib_src_test() {
-	CI=1 virtx emake test || die "Tests failed"
+	CI=1 virtx emake test |& tee test.log || die "Tests failed"
+	grep "Files with failing tests:" test.log && die "Test failed"
 }
 
 multilib_src_install() {

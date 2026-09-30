@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ if [[ ${PV} == 9999 ]]; then
 	S=${WORKDIR}/engauge-${PV}
 else
 	SRC_URI="https://github.com/akhuettel/engauge-digitizer/archive/v${PV}.tar.gz -> engauge-digitizer-${PV}.tar.gz"
-	KEYWORDS="amd64 ~x86"
+	KEYWORDS="amd64 ~arm64 ~x86"
 	S=${WORKDIR}/engauge-digitizer-${PV}
 fi
 
@@ -62,7 +62,7 @@ src_configure() {
 		$(usex pdf "CONFIG+=pdf PKGCONFIG+=poppler-qt6" "") \
 		engauge.pro
 	pushd help >/dev/null || die
-	$(qt6_get_libdir)/qt6/libexec/qhelpgenerator engauge.qhp || die
+	$(qt_get_broot_binary 6 qhelpgenerator) engauge.qhp || die
 	popd >/dev/null || die
 }
 

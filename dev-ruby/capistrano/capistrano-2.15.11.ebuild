@@ -1,8 +1,8 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-USE_RUBY="ruby30 ruby31 ruby32"
+USE_RUBY="ruby30 ruby31 ruby32 ruby33"
 
 RUBY_FAKEGEM_TASK_DOC=""
 RUBY_FAKEGEM_EXTRADOC="CHANGELOG README.md"
@@ -16,7 +16,7 @@ HOMEPAGE="https://capistranorb.com/"
 
 LICENSE="MIT"
 SLOT="2"
-KEYWORDS="amd64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux ~x64-solaris"
+KEYWORDS="amd64 ~ppc ~ppc64 ~x86 ~x64-solaris"
 IUSE="test"
 
 ruby_add_rdepend "

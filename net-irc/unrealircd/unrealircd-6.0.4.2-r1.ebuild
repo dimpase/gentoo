@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ SRC_URI+=" verify-sig? ( https://www.unrealircd.org/downloads/${P}.tar.gz.asc )"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="amd64 arm arm64 ppc ~ppc64 ~riscv x86 ~amd64-linux"
+KEYWORDS="amd64 arm arm64 ppc ~ppc64 ~riscv x86"
 IUSE="class-nofakelag curl geoip +operoverride operoverride-verify"
 
 RDEPEND="
@@ -33,7 +33,7 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 BDEPEND="
 	virtual/pkgconfig
-	verify-sig? ( sec-keys/openpgp-keys-unrealircd )
+	verify-sig? ( ~sec-keys/openpgp-keys-unrealircd-20220407 )
 "
 
 DOCS=( doc/{Authors,Donation,RELEASE-NOTES.md,tao.of.irc,technical/,translations.txt} )

@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -26,11 +26,11 @@ RUBY_S="rmagick-${MY_PV}"
 
 LICENSE="Artistic"
 SLOT="$(ver_cut 1)"
-KEYWORDS="~amd64 ~hppa ~ppc ~ppc64 ~x86"
+KEYWORDS="amd64 ~hppa ppc ppc64 x86"
 IUSE="doc"
 
 RDEPEND=">=media-gfx/imagemagick-6.9.0:="
-DEPEND=">=media-gfx/imagemagick-6.9.0 test? ( >=media-gfx/imagemagick-7.1.0:=[jpeg,lqr,lcms,postscript,tiff,webp,xml] media-fonts/dejavu )"
+DEPEND=">=media-gfx/imagemagick-6.9.0 test? ( >=media-gfx/imagemagick-7.1.0:=[corefonts,jpeg,lqr,lcms,postscript,tiff,webp,xml] )"
 
 ruby_add_rdepend ">=dev-ruby/observer-0.1:0"
 

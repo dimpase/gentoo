@@ -1,4 +1,4 @@
-# Copyright 2019-2025 Gentoo Authors
+# Copyright 2019-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,9 +12,9 @@ S="${WORKDIR}/ldacBT"
 
 LICENSE="Apache-2.0"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
 
-PATCHES=( "${FILESDIR}/${P}-cmake4.patch" ) # bug 951991
+PATCHES=( "${FILESDIR}/${P}-cmake4.patch" ) # bugs #951991, #964517
 
 multilib_src_configure() {
 	local mycmakeargs=(

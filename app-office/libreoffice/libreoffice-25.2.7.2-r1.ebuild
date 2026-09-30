@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 PYTHON_REQ_USE="threads(+),xml(+)"
 
 MY_PV="${PV/_alpha/.alpha}"
@@ -85,7 +85,7 @@ LICENSE="|| ( LGPL-3 MPL-1.1 )"
 SLOT="0"
 
 [[ ${MY_PV} == *9999* ]] || \
-KEYWORDS="amd64 ~arm arm64 ~loong ppc64 ~riscv ~x86 ~amd64-linux"
+KEYWORDS="amd64 ~arm arm64 ~loong ppc64 ~riscv ~x86"
 
 # Extensions that need extra work:
 LO_EXTS="nlpsolver scripting-beanshell scripting-javascript wiki-publisher"
@@ -116,7 +116,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	>=app-text/libebook-0.1
 	app-text/libepubgen
 	>=app-text/libetonyek-0.1
-	app-text/libexttextcat
+	app-text/libexttextcat:=
 	app-text/liblangtag
 	>=app-text/libmspub-0.1.0
 	>=app-text/libmwaw-0.3.21
@@ -296,11 +296,20 @@ PATCHES=(
 	"${FILESDIR}/${PN}-25.2-unused-qt6network.patch"
 	"${FILESDIR}/${PN}-25.2.4.3-gcc16.patch"
 	"${FILESDIR}/${PN}-25.2.6.2-poppler-25.09.patch"
-	"${FILESDIR}/${PN}-25.2.7.2-poppler-25.10.patch"
+	"${FILESDIR}/${P}-poppler-25.10.patch"
+	"${FILESDIR}/${P}-icu-77.1.patch"
+	"${FILESDIR}/${P}-icu-78.1.patch"
+	"${FILESDIR}/${P}-poppler-26.01.patch"
+	"${FILESDIR}/${P}-poppler-26.02.patch"
+	"${FILESDIR}/${P}-poppler-26.04.patch"
+	"${FILESDIR}/${P}-poppler-26.06.patch"
 
 	# add qt6 backend as possible fallback for gtk-based desktop environments:
 	# https://bugs.gentoo.org/950170
 	"${FILESDIR}/${PN}-25.2-vcl-backend-fallback.patch"
+
+	# bug #971474
+	"${FILESDIR}/${PN}-25.2.7.2-skia-clang22.patch"
 )
 
 _check_reqs() {
@@ -463,6 +472,9 @@ src_configure() {
 	else
 		strip-flags
 	fi
+
+	# Workaround for bug #967047
+	tc-is-gcc && [[ $(gcc-major-version) -ge 16 ]] && append-cxxflags -fno-devirtualize-speculatively
 
 	# Show flags set at the end
 	einfo "  Used CFLAGS:    ${CFLAGS}"

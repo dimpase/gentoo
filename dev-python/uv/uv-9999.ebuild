@@ -1,9 +1,9 @@
-# Copyright 2024-2025 Gentoo Authors
+# Copyright 2024-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-RUST_MIN_VER="1.89.0"
+RUST_MIN_VER="1.95.0"
 
 inherit cargo check-reqs git-r3
 
@@ -31,7 +31,6 @@ RDEPEND="
 BDEPEND="
 	virtual/pkgconfig
 	test? (
-		dev-lang/python:3.9
 		dev-lang/python:3.10
 		dev-lang/python:3.11
 		dev-lang/python:3.12
@@ -71,28 +70,22 @@ src_prepare() {
 
 	# enable system libraries where supported
 	export ZSTD_SYS_USE_PKG_CONFIG=1
-	# TODO: unbundle libz-ng-sys, tikv-jemalloc-sys?
+	# TODO: unbundle tikv-jemalloc-sys?
 
-	# bzip2-sys requires a pkg-config file
-	# https://github.com/alexcrichton/bzip2-rs/issues/104
-	mkdir "${T}/pkg-config" || die
-	export PKG_CONFIG_PATH=${T}/pkg-config${PKG_CONFIG_PATH+:${PKG_CONFIG_PATH}}
-	cat >> "${T}/pkg-config/bzip2.pc" <<-EOF || die
-		Name: bzip2
-		Version: 9999
-		Description:
-		Libs: -lbz2
-	EOF
+	# remove unbundled sources, just in case
+	find "${ECARGO_VENDOR}"/zstd-sys-*/ -name '*.c' -delete || die
 }
 
 src_configure() {
 	local myfeatures=(
-		git
-		pypi
-		python
+		test-git
+		test-pypi
+		test-python
 	)
 
 	cargo_src_configure --no-default-features
+	# otherwise, rustc/llvm runs out of address space
+	use arm && export RUSTFLAGS="${RUSTFLAGS} -Copt-level=0"
 }
 
 src_compile() {
@@ -101,20 +94,12 @@ src_compile() {
 }
 
 src_test() {
-	# work around https://github.com/astral-sh/uv/issues/4376
-	local -x PATH=${BROOT}/usr/lib/python-exec/python3.12:${PATH}
-	local -x COLUMNS=100
-	local -x PYTHONDONTWRITEBYTECODE=
-	# fix tests failing because of our config
-	local -x XDG_CONFIG_DIRS=${T}
-
 	cd crates/uv || die
 	cargo_src_test --no-fail-fast
 }
 
 src_install() {
-	cd crates/uv || die
-	cargo_src_install
+	dobin "$(cargo_target_dir)"/{uv,uvx}
 
 	insinto /etc/xdg/uv
 	newins - uv.toml <<-EOF || die

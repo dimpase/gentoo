@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ else
 	SRC_URI="https://gitlab.freedesktop.org/virgl/${PN}/-/archive/${P}/${MY_P}.tar.bz2"
 	S="${WORKDIR}/${MY_P}"
 
-	KEYWORDS="~amd64 ~arm64 ~loong ~riscv ~x86"
+	KEYWORDS="amd64 ~arm64 ~loong ~riscv ~x86"
 fi
 
 DESCRIPTION="Library used implement a virtual 3D GPU used by qemu"
@@ -42,7 +42,16 @@ BDEPEND="
 	$(python_gen_any_dep "
 		dev-python/pyyaml[\${PYTHON_USEDEP}]
 	")
+	test? (
+		dev-libs/check
+	)
 "
+
+PATCHES=(
+	"${FILESDIR}"/${PN}-1.2.0-c23-glibc-2.43.patch
+	"${FILESDIR}"/${PN}-1.2.0-c23-glibc-2.43-deux.patch
+	"${FILESDIR}"/${PN}-1.2.0-x86-format.patch
+)
 
 python_check_deps() {
 	python_has_version -b "dev-python/pyyaml[${PYTHON_USEDEP}]" || return 1

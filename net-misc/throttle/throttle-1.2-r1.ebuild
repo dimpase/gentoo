@@ -9,12 +9,12 @@ inherit autotools
 # disappeared
 
 DESCRIPTION="Bandwidth limiting pipe"
-HOMEPAGE="https://wiki.gentoo.org/wiki/No_homepage"
+HOMEPAGE="https://web.archive.org/web/20110725180344/http://klicman.org/"
 SRC_URI="https://dev.gentoo.org/~grobian/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="amd64 ~x86 ~amd64-linux"
+KEYWORDS="amd64 ~x86"
 IUSE=""
 
 src_prepare() {

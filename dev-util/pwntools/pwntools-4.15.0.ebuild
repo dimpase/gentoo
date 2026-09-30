@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{12..14} )
 DISTUTILS_USE_PEP517=setuptools
 inherit distutils-r1 shell-completion
 
@@ -16,7 +16,7 @@ if [[ ${PV} == "9999" ]]; then
 else
 	SRC_URI="https://github.com/Gallopsled/pwntools/archive/${PV/_beta/beta}.tar.gz -> ${P}.gh.tar.gz"
 	if [[ ${PV} != *_beta* ]] ; then
-		KEYWORDS="amd64 ~arm64 ~riscv x86"
+		KEYWORDS="amd64 ~arm64 ~riscv"
 	fi
 	S="${WORKDIR}/${PN}-${PV/_beta/beta}"
 fi
@@ -24,6 +24,9 @@ fi
 LICENSE="MIT GPL-2+ BSD-2"
 SLOT="0"
 
+# <unicorn-2.1.4:
+# https://github.com/Gallopsled/pwntools/issues/2619
+# https://github.com/unicorn-engine/unicorn/issues/2134
 RDEPEND="
 	${PYTHON_DEPS}
 	>=dev-libs/capstone-3.0.5[python,${PYTHON_USEDEP}]

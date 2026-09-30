@@ -1,18 +1,23 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-LLVM_COMPAT=( {18..21} )
-inherit cmake cuda llvm-r1
+# LLVM-21 broken for nvtpx
+# https://github.com/llvm/llvm-project/issues/154772
+LLVM_COMPAT=( {18..20} )
+inherit cmake cuda llvm-r1 verify-sig
 
 DESCRIPTION="Portable Computing Language (an implementation of OpenCL)"
 HOMEPAGE="http://portablecl.org https://github.com/pocl/pocl"
-SRC_URI="https://github.com/pocl/pocl/archive/v${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="
+	https://github.com/pocl/pocl/archive/v${PV}.tar.gz -> ${P}.tar.gz
+	verify-sig? ( https://github.com/pocl/pocl/releases/download/v${PV}/${P}.tar.gz.gpg )
+"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64 ~ppc64"
+KEYWORDS="amd64 ppc64"
 # TODO: hsa tce
 IUSE="accel +conformance cuda debug examples +hwloc memmanager server spirv test"
 RESTRICT="!test? ( test )"
@@ -47,7 +52,14 @@ DEPEND="${RDEPEND}"
 BDEPEND="
 	${CLANG_DEPS}
 	virtual/pkgconfig
+	verify-sig? ( sec-keys/openpgp-keys-franz )
 "
+VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/franz.asc
+
+src_unpack() {
+	use verify-sig && verify-sig_verify_detached "${DISTDIR}"/${P}.tar.gz{,.gpg}
+	unpack ${P}.tar.gz
+}
 
 src_prepare() {
 	use cuda && cuda_src_prepare

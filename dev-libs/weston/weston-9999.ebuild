@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -22,14 +22,13 @@ fi
 LICENSE="MIT CC-BY-SA-3.0"
 SLOT="0"
 
-IUSE="+desktop +drm editor examples +gles2 headless ivi jpeg kiosk lcms lua pipewire rdp remoting +resize-optimization +suid systemd test vnc vulkan wayland-compositor webp +X xwayland"
+IUSE="+desktop +drm editor examples +gles2 headless ivi jpeg kiosk lcms lua pipewire rdp +resize-optimization +suid systemd test vnc vulkan wayland-compositor webp +X xwayland"
 RESTRICT="!test? ( test )"
 
 REQUIRED_USE="
 	drm? ( gles2 )
 	lua? ( ${LUA_REQUIRED_USE} )
 	pipewire? ( drm )
-	remoting? ( drm gles2 )
 	test? ( headless )
 	wayland-compositor? ( gles2 )
 	|| ( drm headless rdp vnc wayland-compositor X )
@@ -38,15 +37,15 @@ REQUIRED_USE="
 RDEPEND="
 	>=dev-libs/libinput-1.2.0
 	>=dev-libs/wayland-1.22.0
+	<media-libs/libdisplay-info-0.5.0:=
 	media-libs/libpng:0=
 	sys-auth/seatd:=
 	>=x11-libs/cairo-1.11.3
-	>=x11-libs/libdrm-2.4.108
+	>=x11-libs/libdrm-2.4.130
 	>=x11-libs/libxkbcommon-0.5.0
 	>=x11-libs/pixman-0.25.2
 	x11-misc/xkeyboard-config
 	drm? (
-		<media-libs/libdisplay-info-0.4.0:=
 		>=media-libs/mesa-21.1.1
 		>=sys-libs/mtdev-1.1.0
 		>=virtual/udev-136
@@ -65,16 +64,11 @@ RDEPEND="
 	lcms? ( >=media-libs/lcms-2.9:2 )
 	lua? ( ${LUA_DEPS} )
 	pipewire? ( >=media-video/pipewire-0.3:= )
-	rdp? ( >=net-misc/freerdp-2.3.0:=[server] )
-	remoting? (
-		dev-libs/glib:2
-		media-libs/gstreamer:1.0
-		media-libs/gst-plugins-base:1.0
-	)
+	rdp? ( >=net-misc/freerdp-3[server] )
 	systemd? ( sys-apps/systemd )
 	vnc? (
-		=dev-libs/aml-0.3*
-		=gui-libs/neatvnc-0.8*
+		=dev-libs/aml-1*:=
+		=gui-libs/neatvnc-1*:=
 		sys-libs/pam
 	)
 	vulkan? (
@@ -94,8 +88,9 @@ RDEPEND="
 		>=x11-libs/xcb-util-cursor-0.1.4
 	)
 "
-DEPEND="${RDEPEND}
-	>=dev-libs/wayland-protocols-1.33
+DEPEND="
+	${RDEPEND}
+	>=dev-libs/wayland-protocols-1.46
 "
 BDEPEND="
 	${PYTHON_DEPS}
@@ -112,7 +107,6 @@ pkg_setup() {
 src_configure() {
 	local emesonargs=(
 		$(meson_use drm backend-drm)
-		-Dbackend-drm-screencast-vaapi=false
 		$(meson_use headless backend-headless)
 		$(meson_use pipewire backend-pipewire)
 		$(meson_use rdp backend-rdp)
@@ -124,8 +118,6 @@ src_configure() {
 		$(meson_use gles2 renderer-gl)
 		$(meson_use xwayland)
 		$(meson_use systemd)
-		$(meson_use remoting)
-		$(meson_use pipewire)
 		$(meson_use desktop shell-desktop)
 		$(meson_use ivi shell-ivi)
 		$(meson_use lua shell-lua)
@@ -135,7 +127,7 @@ src_configure() {
 		$(meson_use webp image-webp)
 		-Dtools=debug,info,terminal
 		$(meson_use examples demo-clients)
-		-Dsimple-clients=$(usex examples damage,dmabuf-v4l,im,shm,touch$(usex gles2 ,dmabuf-feedback,dmabuf-egl,egl "") "")
+		-Dsimple-clients=$(usev examples all)
 		$(meson_use resize-optimization resize-pool)
 		$(meson_use test tests)
 		-Dtest-junit-xml=false
@@ -150,7 +142,7 @@ src_test() {
 
 	# xwayland test can fail if X11 socket already exists.
 	cd "${BUILD_DIR}" || die
-	meson test $(meson test --list | grep -Exv "xwayland") || die
+	meson test $(meson test --list | grep -Exv "weston:xwayland") || die
 }
 
 src_install() {

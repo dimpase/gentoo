@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: nginx.eclass
@@ -6,29 +6,34 @@
 # Zurab Kvachadze <zurabid2016@gmail.com>
 # @AUTHOR:
 # Zurab Kvachadze <zurabid2016@gmail.com>
-# @SUPPORTED_EAPIS: 8
+# @SUPPORTED_EAPIS: 8 9
 # @BLURB: Provides a common set of functions for building the NGINX server
 # @DESCRIPTION:
 # This eclass automates building, testing and installation of the NGINX server.
-# Essentially, apart from the advanced usage, the ebuild must only define 4
+# Essentially, apart from the advanced usage, the ebuild must only define 3
 # variables prior to inheriting the eclass, everything else is handled by the
 # nginx.eclass.
 # Refer to the individual variable descriptions for documentation.  The required
 # variables are:
 #  - NGINX_SUBSYSTEMS
 #  - NGINX_MODULES
-#  - NGINX_UPDATE_STREAM
 #  - NGINX_TESTS_COMMIT
-# And 1 optional variable (see description):
+# And 2 optional variables (see description):
 #  - NGINX_MISC_FILES
-
-case ${EAPI} in
-	8) inherit eapi9-pipestatus ;;
-	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
-esac
+#  - NGINX_UPDATE_STREAM (only for -9999 VCS versions)
+#
+# EAPI porting notes:
+#  - 8 -> 9:
+#    * NGINX_SUPPORT_MODULE_STUBS is enabled unconditionally.
 
 if [[ -z ${_NGINX_ECLASS} ]]; then
 _NGINX_ECLASS=1
+
+case ${EAPI} in
+	8) inherit eapi9-pipestatus edo ;;
+	9) ;;
+	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
+esac
 
 # The 60tmpfiles-paths install check produces QA warning if it does not detect
 # tmpfiles_process() in pkg_postinst(). Even though the tmpfiles_process() is
@@ -37,7 +42,7 @@ _NGINX_ECLASS=1
 # Nonetheless, it is possible to opt out from the QA check by setting the
 # TMPFILES_OPTIONAL variable.
 TMPFILES_OPTIONAL=1
-inherit edo multiprocessing perl-functions systemd toolchain-funcs tmpfiles
+inherit multiprocessing perl-functions systemd toolchain-funcs tmpfiles
 
 #-----> ebuild-defined variables <-----
 
@@ -108,34 +113,34 @@ readonly _NGX_MODULES=( "${NGINX_MODULES[@]}" )
 
 # @ECLASS_VARIABLE: NGINX_UPDATE_STREAM
 # @PRE_INHERIT
-# @REQUIRED
 # @DESCRIPTION:
-# This variable must contain the update stream of NGINX.  The list of all
-# possible update streams is set by the NGX_UPDATE_STREAMS_LIST variable.  An
-# ebuild must not set SLOT manually.  The eclass will automatically set SLOT and
-# add blocks on other update streams into RDEPEND variable, based on this
-# variable.
-# NGINX_UPDATE_STREAM might be set to a special value: 'live'.  Doing this makes
-# the eclass fetch the live (latest) version of NGINX from its Git repository.
-# This behaviour can be further configured by setting the following variables
-# (refer to each variable description for documentation):
+# NGINX_UPDATE_STREAM, if set at all, must only be set to a special value:
+# 'live'.  Setting this variable to any other value is a noop and deprecated.
+# The allowed (noop) values for this variable, including 'live', are specified
+# in ${NGX_UPDATE_STREAMS_LIST}.
+#
+# If this is set to 'live', the eclass fetches the live (latest) version of
+# NGINX from its Git repository.  This behaviour can be further configured by
+# setting the following variables (refer to each variable description for
+# documentation):
 #  - NGINX_GIT_URI
 #  - NGINX_GIT_TESTS_URI
-#
-# Example usage:
-# @CODE
-# NGINX_UPDATE_STREAM=mainline
-# @CODE
 
 # @ECLASS_VARIABLE: NGX_UPDATE_STREAMS_LIST
 # @DESCRIPTION:
 # Read-only array that contains all the possible NGINX update streams.
+# Currently, any values other than 'live' are deprecated and are a noop.
 readonly NGX_UPDATE_STREAMS_LIST=( stable mainline live )
 
-[[ -z ${NGINX_UPDATE_STREAM} ]] &&
-	die "The required NGINX_UPDATE_STREAM variable is unset or empty"
-has "${NGINX_UPDATE_STREAM}" "${NGX_UPDATE_STREAMS_LIST[@]}" ||
+if [[ -n ${NGINX_UPDATE_STREAM} ]] &&
+	! has "${NGINX_UPDATE_STREAM}" "${NGX_UPDATE_STREAMS_LIST[@]}"; then
 	die "Unknown update stream set in the NGINX_UPDATE_STREAM variable"
+fi
+
+case ${NGINX_UPDATE_STREAM} in
+	stable|mainline)
+		eqawarn "NGINX_UPDATE_STREAM=${NGINX_UPDATE_STREAM} is deprecated and no longer has any effect."
+esac
 
 [[ ${NGINX_UPDATE_STREAM} == live ]] && inherit git-r3
 
@@ -221,11 +226,32 @@ has "${NGINX_UPDATE_STREAM}" "${NGX_UPDATE_STREAMS_LIST[@]}" ||
 # automatically fill the BDEPEND variable with module test dependencies.
 # For details, see _ngx_set_mod_test_depend() function description below.
 
+# @ECLASS_VARIABLE: NGINX_SUPPORT_MODULE_STUBS
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# Set this to a non-empty value before calling nginx_src_install() to create
+# /etc/nginx/modules-{available,enabled} and to make the default config load
+# .conf stubs from /etc/nginx/modules-enabled.  See nginx_src_install() for
+# details.
+#
+# In EAPI 9, the functionality is unconditionally enabled.
+[[ ${EAPI} != 8 ]] && readonly NGINX_SUPPORT_MODULE_STUBS=1
+
+#-----> Internal variables <-----
+
+# @ECLASS_VARIABLE: _NGX_CONFIG_FLAGS_FILE
+# @INTERNAL
+# @DESCRIPTION:
+# Holds the path to the temporary copy of ./configure flags used to configure
+# NGINX.  Installed to /usr/src/nginx.  Used in nginx_src_configure() and
+# nginx_src_install().
+_NGX_CONFIG_FLAGS_FILE="${T}/nginx-configure-flags"
+
 #-----> ebuild setup <-----
 
-# NGINX does not guarantee ABI stability (required by dynamic modules), SLOT is
+# NGINX does not guarantee ABI stability (required by dynamic modules), subslot is
 # set to reflect this.
-SLOT="${NGINX_UPDATE_STREAM}/${PV}"
+: "${SLOT=0/${PV}}"
 : "${DESCRIPTION=Robust, small and high performance HTTP and reverse proxy server}"
 : "${HOMEPAGE=https://nginx.org https://github.com/nginx/nginx}"
 if [[ -z ${SRC_URI} ]]; then
@@ -273,7 +299,7 @@ econf_ngx() {
 		#
 		# Executing this without edo gets rid of the "Failed to run" message.
 		./configure "$@"
-		return
+		return 0
 	fi
 	edo ./configure "$@"
 }
@@ -288,8 +314,9 @@ _ngx_populate_iuse() {
 	local mod state
 	IUSE+=" ${_NGX_SUBSYSTEMS[*]}"
 	for mod in "${_NGX_MODULES[@]}"; do
-		# SSL should be enabled by default in 2025.
-		if [[ ${mod:0:1} == + || ${mod} == *_ssl ]]; then
+		# SSL should be enabled by default in 2025. http_v2 is enabled because
+		# bug 968056.
+		if [[ ${mod:0:1} == + || ${mod} == *_ssl || ${mod#+} == http_v2 ]]; then
 			state=+
 		else
 			state=''
@@ -331,27 +358,6 @@ RDEPEND="
 IDEPEND="virtual/tmpfiles"
 
 
-# @FUNCTION: _ngx_set_blocks
-# @INTERNAL
-# @USAGE: <chosen_update_stream> <possible_upd_stream1> [<possible_upd_stream2>...]
-# @DESCRIPTION:
-# Set blocks on all the supplied update streams apart from the chosen one.
-_ngx_set_blocks() {
-	debug-print-function "${FUNCNAME[0]}" "$@"
-	[[ $# -ge 2 ]] || die "${FUNCNAME[0]} must receive at least two arguments"
-	local chosen candidate
-	chosen="$1"
-	shift
-	for candidate; do
-		[[ ${candidate} != "${chosen}" ]] &&
-			RDEPEND+=" !${CATEGORY}/${PN}:${candidate}"
-	done
-}
-
-# Null at the end makes the function also block the legacy unslotted NGINX versions.
-_ngx_set_blocks "${NGINX_UPDATE_STREAM}" "${NGX_UPDATE_STREAMS_LIST[@]}" 0
-
-
 # @FUNCTION: _ngx_set_mod_required_use
 # @INTERNAL
 # @DESCRIPTION:
@@ -370,6 +376,7 @@ _ngx_set_blocks "${NGINX_UPDATE_STREAM}" "${NGX_UPDATE_STREAMS_LIST[@]}" 0
 _ngx_set_mod_required_use() {
 	local -A _NGX_DEP_TABLE=(
 		[http_v3]=http_ssl
+		[http_grpc]=http_v2
 	)
 
 	local mod dep_list dep result
@@ -378,7 +385,8 @@ _ngx_set_mod_required_use() {
 		if has "${mod}" "${_NGX_MODULES[@]#+}"; then
 			result=''
 			# Feed comma-delimited dependencies into the dep_list array.
-			IFS=, read -ra dep_list <<< "${_NGX_DEP_TABLE[${mod}]}"
+			mapfile -td ',' dep_list < <(printf %s "${_NGX_DEP_TABLE[${mod}]}")
+
 			for dep in "${dep_list[@]}"; do
 				has "${dep}" "${_NGX_MODULES[@]#+}" &&
 					result+=" nginx_modules_${dep}"
@@ -497,7 +505,7 @@ _ngx_set_mod_test_depend() {
 			dev-perl/IO-Socket-SSL
 			dev-perl/Net-SSLeay
 		"
-		[http_uwsgi]="www-servers/uwsgi[python(-)]"
+		[http_uwsgi]="www-servers/uwsgi[ssl,python(-)]"
 		[http_v3]="dev-perl/CryptX"
 		[mail_ssl]="dev-perl/IO-Socket-SSL"
 		[stream_ssl]="dev-perl/IO-Socket-SSL"
@@ -519,23 +527,6 @@ unset -f _ngx_set_blocks _ngx_set_mod_required_use _ngx_set_mod_depend \
 	_ngx_set_mod_test_depend
 
 #-----> Phase functions <-----
-
-# @FUNCTION: nginx_pkg_setup
-# @DESCRIPTION:
-# Shows important information that a user should pay attention to.
-nginx_pkg_setup() {
-	debug-print-function "${FUNCNAME[0]}" "$@"
-	local prefix="nginx_modules_http"
-	if in_iuse "${prefix}_grpc" && in_iuse "${prefix}_v2" &&
-		use "${prefix}_grpc" && ! use "${prefix}_v2";
-	then
-		ewarn "http_grpc is enabled when http_v2 is disabled."
-		ewarn "The http_grpc module will not be built if http_v2 is not enabled."
-		ewarn "Please enable the ${prefix}_v2 USE flag on ${CATEGORY}/${PN}"
-		ewarn "to use the http_grpc NGINX module. Refer to the Gentoo Handbook for"
-		ewarn "instructions on how to change USE flags."
-	fi
-}
 
 # @FUNCTION: nginx_src_unpack
 # @DESCRIPTION:
@@ -692,6 +683,13 @@ nginx_src_configure() {
 		"$@"					\
 		"${EXTRA_ECONF[@]}"
 
+	# Store the configuration flags to install to /usr/src/nginx later for
+	# module building.
+	if use modules; then
+		printf '%s\0' "${nginx_flags[@]}" "$@" "${EXTRA_ECONF[@]}" \
+			> "${_NGX_CONFIG_FLAGS_FILE}" || die "printf failed"
+	fi
+
 	sed -E -i \
 		-e '/^\s*LIB= \\$/ d' \
 		-e '/^\s*INSTALLSITEMAN3DIR= \\$/ d' \
@@ -777,7 +775,7 @@ nginx_src_test() {
 # and NGINX headers into '/usr/include/nginx'.
 nginx_src_install() {
 	debug-print-function "${FUNCNAME[0]}" "$@"
-	emake DESTDIR="${ED}" install
+	emake DESTDIR="${D}" install
 	keepdir "/usr/$(get_libdir)/nginx/modules"
 
 	keepdir /var/log/nginx
@@ -865,6 +863,13 @@ nginx_src_install() {
 		perl_fix_packlist
 	fi
 
+	# If not using modules, do not 'include modules-enabled/*.conf;'. Also, just
+	# in case, remove the line if NGINX_SUPPORT_MODULE_STUBS is unset.
+	if use !modules || [[ -z ${NGINX_SUPPORT_MODULE_STUBS} ]]; then
+		sed -i '/^@GENTOO_MODULES_INCLUDE@$/d' "${ED}"/etc/nginx/nginx.conf ||
+			die "sed failed"
+	fi
+
 	# For the rationale of the following, see nginx-module.eclass.
 	if use modules; then
 		# Install the headers into /usr/include/nginx.
@@ -883,32 +888,19 @@ nginx_src_install() {
 		# The directory where third-party modules should save their own headers.
 		keepdir /usr/include/nginx/modules
 
-		# Allow pluging arbitrary libraries (linker flags, more accurately) via
-		# the _NGINX_GENTOO_MOD_LIBS environment variable.
+		# Allow injecting linker flags before and libraries after NGINX's module
+		# libraries via environment variables.
 		sed -i -e '/"$ngx_module_link" = DYNAMIC/ a\' \
-			-e 'ngx_module_libs="$ngx_module_libs ${_NGINX_GENTOO_MOD_LIBS}"' \
+			-e 'ngx_module_libs="${_NGINX_GENTOO_MOD_LDFLAGS} $ngx_module_libs ${_NGINX_GENTOO_MOD_LIBS}"' \
 			auto/module || die "sed failed"
 
 		# Copy the build system of NGINX to /usr/src/nginx.
 		insinto /usr/src/nginx
 		doins -r auto
+		# Save the configure flags so that modules have easier time manipulating
+		# the build environment.
+		newins "${_NGX_CONFIG_FLAGS_FILE}" configure-flags
 
-		# Disable several checks if the _NGINX_GENTOO_SKIP_PHASES variable is
-		# set to a non-empty value during the invocation of ./configure script.
-		# This is done since (1) these scripts do not have any effect on the
-		# build process of third-party modules and (2) they considerably
-		# increase configuration time.
-		sed -E -i \
-			's#^\s*\. auto/(unix|summary)$# \
-			[ -z "${_NGINX_GENTOO_SKIP_PHASES}" ] \&\& &#' \
-			configure || die "sed failed"
-
-		# The last statement in ./configure is [ -z "${_NGINX_GENTOO... ]. If
-		# _NGINX_GENTOO_SKIP_PHASES is non-empty, it evaluates to false and the
-		# whole ./configure script exits with a non-zero exit status. 'exit 0'
-		# is appended to the end of the script to always exit with a zero exit
-		# status, regardless of what the last statement evaluates to.
-		echo 'exit 0' >> configure || die "echo failed"
 		exeinto /usr/src/nginx
 		doexe configure
 
@@ -921,6 +913,13 @@ nginx_src_install() {
 			variable = BDEPEND
 			includes = ${CATEGORY}/${PN}
 		EOF
+
+		if [[ -n ${NGINX_SUPPORT_MODULE_STUBS} ]]; then
+			keepdir /etc/nginx/modules-{available,enabled}
+
+			sed -i 's|^@GENTOO_MODULES_INCLUDE@$|include modules-enabled/*.conf;|' \
+				"${ED}"/etc/nginx/nginx.conf || die "sed failed"
+		fi
 	fi
 }
 
@@ -951,5 +950,5 @@ nginx_pkg_postinst() {
 
 fi
 
-EXPORT_FUNCTIONS pkg_setup src_unpack src_prepare src_configure src_compile \
-	src_test src_install pkg_postinst
+EXPORT_FUNCTIONS src_unpack src_prepare src_configure src_compile src_test \
+	src_install pkg_postinst

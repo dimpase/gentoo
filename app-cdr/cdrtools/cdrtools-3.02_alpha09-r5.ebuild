@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -15,7 +15,7 @@ S=${WORKDIR}/${P/_alpha[0-9][0-9]}
 
 LICENSE="GPL-2 LGPL-2.1 CDDL-Schily"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86"
 IUSE="acl caps nls unicode selinux"
 
 BDEPEND="
@@ -295,7 +295,7 @@ src_install() {
 	dodoc ChangeLog* TODO
 
 	# Remove man pages related to the build system
-	rm -rvf "${ED}"/usr/share/man/man5 || die
+	rm -r "${ED}"/usr/share/man/man5 || die
 }
 
 pkg_postinst() {

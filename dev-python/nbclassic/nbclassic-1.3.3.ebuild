@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} pypy3_11 )
+PYTHON_COMPAT=( python3_{12..14} )
 DISTUTILS_USE_PEP517=hatchling
 
 inherit distutils-r1 pypi xdg-utils
@@ -27,6 +27,7 @@ RDEPEND="
 "
 
 BDEPEND="
+	dev-python/babel
 	dev-python/hatch-jupyter-builder[${PYTHON_USEDEP}]
 	test? (
 		dev-python/nbval[${PYTHON_USEDEP}]

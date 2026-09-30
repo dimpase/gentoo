@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -20,7 +20,7 @@ SRC_URI="
 
 LICENSE="|| ( AGPL-3 RSAL-2 SSPL-1 ) Boost-1.0 MIT"
 SLOT="0/$(ver_cut 1-2)"
-KEYWORDS="amd64 ~arm arm64 ~hppa ~loong ppc ppc64 ~riscv ~s390 ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~arm arm64 ~hppa ~loong ppc ppc64 ~riscv ~s390 ~sparc x86"
 IUSE="+jemalloc selinux ssl systemd tcmalloc test"
 RESTRICT="!test? ( test )"
 
@@ -44,7 +44,7 @@ BDEPEND="
 	virtual/pkgconfig
 	test? (
 		dev-lang/tcl:0=
-		ssl? ( dev-tcltk/tls )
+		ssl? ( <dev-tcltk/tls-2 )
 	)
 "
 

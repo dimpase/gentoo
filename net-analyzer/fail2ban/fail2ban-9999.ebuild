@@ -1,11 +1,11 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{12..14} )
 
-inherit bash-completion-r1 edo python-single-r1 systemd tmpfiles
+inherit bash-completion-r1 edo python-single-r1 systemd
 
 DESCRIPTION="Scans log files and bans IPs that show malicious signs"
 HOMEPAGE="https://www.fail2ban.org/"
@@ -15,7 +15,7 @@ if [[ ${PV} == *9999 ]] ; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/fail2ban/fail2ban/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86"
 fi
 
 LICENSE="GPL-2"
@@ -97,8 +97,6 @@ src_install() {
 	newinitd "${S}"/build/fail2ban-openrc.init ${PN}
 	systemd_dounit "${S}"/build/${PN}.service
 
-	dotmpfiles files/${PN}-tmpfiles.conf
-
 	doman man/*.{1,5}
 
 	# Use INSTALL_MASK if you do not want to touch /etc/logrotate.d.
@@ -118,8 +116,6 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
-	tmpfiles_process ${PN}-tmpfiles.conf
-
 	if [[ ${previous_less_than_0_7} == 0 ]] ; then
 		elog
 		elog "Configuration files are now in /etc/fail2ban/"

@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,7 +7,7 @@ DOCS_BUILDER="sphinx"
 DOCS_DIR="doc"
 DOCS_AUTODOC=0
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 
 # python-any-r1 is inherited first because docs.eclass sources it, and cmake.eclass exports phases.
 inherit python-any-r1 cmake docs flag-o-matic linux-info
@@ -21,7 +21,7 @@ if [[ ${PV} == 9999 ]]; then
 else
 	SRC_URI="https://github.com/gerbera/${PN}/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
 	S="${WORKDIR}/${P}"
-	KEYWORDS="~amd64 ~arm ~arm64 ~x86"
+	KEYWORDS="amd64 ~arm ~arm64 ~x86"
 fi
 
 LICENSE="GPL-2"
@@ -65,6 +65,10 @@ BDEPEND="
 "
 
 CONFIG_CHECK="~INOTIFY_USER"
+
+PATCHES=(
+	"${FILESDIR}"/${P}-libfmt-12.patch
+)
 
 src_configure() {
 	# bug #941944

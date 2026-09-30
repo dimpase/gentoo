@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -9,7 +9,7 @@ MY_PV=${PV/_/-}
 MY_PN="phpMyAdmin"
 MY_P="${MY_PN}-${MY_PV}-all-languages"
 
-DESCRIPTION="Web-based administration for MySQL database in PHP"
+DESCRIPTION="Web-based administration for MySQL and MariaDB databases, written in PHP"
 HOMEPAGE="https://www.phpmyadmin.net/"
 SRC_URI="https://files.phpmyadmin.net/${MY_PN}/${MY_PV}/${MY_P}.tar.xz"
 S="${WORKDIR}"/${MY_P}
@@ -49,11 +49,11 @@ src_install() {
 		elog "It regularly is the target of various exploits."
 	fi
 
-	insinto "${MY_HTDOCSDIR#${EPREFIX}}"
+	insinto "${MY_HTDOCSDIR#"${EPREFIX}"}"
 	doins -r .
 
-	webapp_configfile "${MY_HTDOCSDIR#${EPREFIX}}"/libraries/config.default.php
-	webapp_serverowned "${MY_HTDOCSDIR#${EPREFIX}}"/libraries/config.default.php
+	webapp_configfile "${MY_HTDOCSDIR#"${EPREFIX}"}"/libraries/config.default.php
+	webapp_serverowned "${MY_HTDOCSDIR#"${EPREFIX}"}"/libraries/config.default.php
 
 	webapp_postinst_txt en "${FILESDIR}"/postinstall-en-3.1.txt
 	webapp_src_install

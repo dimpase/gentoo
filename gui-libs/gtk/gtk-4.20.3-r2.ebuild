@@ -1,4 +1,4 @@
-# Copyright 2023-2025 Gentoo Authors
+# Copyright 2023-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -90,7 +90,6 @@ PDEPEND="
 "
 BDEPEND="
 	>=dev-build/meson-1.5.0
-	dev-libs/gobject-introspection-common
 	introspection? (
 		${PYTHON_DEPS}
 		$(python_gen_any_dep '
@@ -99,14 +98,14 @@ BDEPEND="
 	)
 	dev-python/docutils
 	>=dev-libs/glib-2.82
-	>=dev-util/gdbus-codegen-2.48
+	>=dev-util/gdbus-codegen-2.80.5-r1
 	dev-util/glib-utils
 	>=sys-devel/gettext-0.19.7
 	virtual/pkgconfig
 	gtk-doc? ( dev-util/gi-docgen )
 	vulkan? ( media-libs/shaderc )
 	wayland? (
-		dev-util/wayland-scanner
+		>=dev-util/wayland-scanner-1.24.0
 	)
 	test? (
 		dev-libs/glib:2

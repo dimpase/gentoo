@@ -1,4 +1,4 @@
-# Copyright 2025 Gentoo Authors
+# Copyright 2025-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -8,7 +8,7 @@ inherit qt6-build
 DESCRIPTION="Graphs component library for the Qt6 framework"
 
 if [[ ${QT6_BUILD_TYPE} == release ]]; then
-	KEYWORDS="~amd64"
+	KEYWORDS="~amd64 ~arm64 ~ppc64"
 fi
 
 IUSE="quick3d"
@@ -21,10 +21,17 @@ RDEPEND="
 	quick3d? ( ~dev-qt/qtquick3d-${PV}:6 )
 "
 DEPEND="${RDEPEND}"
+BDEPEND="
+	~dev-qt/qtshadertools-${PV}:6
+"
 
 CMAKE_SKIP_TESTS=(
 	# hangs+timeout with offscreen rendering
 	tst_qgqmltest
+)
+
+PATCHES=(
+	"${FILESDIR}"/${PN}-6.11.0-no-quick3d.patch
 )
 
 src_configure() {
@@ -33,5 +40,5 @@ src_configure() {
 		$(cmake_use_find_package quick3d Qt6Quick3D)
 	)
 
-	cmake_src_configure
+	qt6-build_src_configure
 }

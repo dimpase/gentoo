@@ -1,8 +1,8 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 
 inherit cuda desktop prefix python-single-r1 toolchain-funcs xdg
 
@@ -19,7 +19,7 @@ S="${WORKDIR}/${MY_P}"
 LICENSE="vmd"
 
 SLOT="0"
-KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86"
 
 IUSE="cuda gromacs msms povray sqlite tachyon xinerama"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"

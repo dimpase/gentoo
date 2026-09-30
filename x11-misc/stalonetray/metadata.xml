@@ -7,8 +7,9 @@
 	</maintainer>
 	<use>
 		<flag name="graceful-exit">use non-portable hack to exit gracefully on signal</flag>
+		<flag name="xrandr">Enable XRandR support to react to monitor changes at runtime</flag>
 	</use>
 	<upstream>
-		<remote-id type="github">kolbusa/stalonetray</remote-id>
+		<remote-id type="github">d3adb5/stalonetray</remote-id>
 	</upstream>
 </pkgmetadata>

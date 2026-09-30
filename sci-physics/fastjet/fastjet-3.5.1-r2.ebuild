@@ -1,10 +1,10 @@
-# Copyright 2025 Gentoo Authors
+# Copyright 2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 FORTRAN_NEEDED=plugins
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 DOCS_BUILDER="doxygen"
 DOCS_DEPEND="
 	media-gfx/graphviz
@@ -21,7 +21,7 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://gitlab.com/fastjet/fastjet"
 else
 	SRC_URI="https://fastjet.fr/repo/${P}.tar.gz"
-	KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="~amd64 ~x86"
 fi
 
 LICENSE="GPL-2+"

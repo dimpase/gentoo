@@ -1,11 +1,10 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake toolchain-funcs
-
 COMMIT="8ee6a372ca703836f593e3c450ca903f04be14df"
+inherit cmake toolchain-funcs
 
 DESCRIPTION="Parallel (MPI) unstructured graph partitioning library"
 HOMEPAGE="https://github.com/KarypisLab/ParMETIS"
@@ -14,7 +13,7 @@ S="${WORKDIR}/ParMETIS-${COMMIT}"
 
 LICENSE="all-rights-reserved"
 SLOT="0"
-KEYWORDS="amd64 arm64 ~loong ~riscv ~x86 ~amd64-linux"
+KEYWORDS="amd64 arm64 ~loong ~riscv ~x86"
 IUSE="examples openmp pcre"
 RESTRICT="mirror bindist"
 
@@ -29,6 +28,7 @@ RDEPEND="${DEPEND}"
 PATCHES=(
 	"${FILESDIR}"/${P}-respect-user-flags.patch
 	"${FILESDIR}"/${P}-multilib.patch
+	"${FILESDIR}"/${P}-cmake4.patch
 )
 
 pkg_pretend() {

@@ -1,15 +1,15 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{12..14} )
 
 # https://github.com/FreeCAD/FreeCAD/issues/19066
 # The added asserts break on mem leaks, so tests fail.
 # PYTHON_REQ_USE="-debug"
 
-inherit check-reqs cmake cuda edo flag-o-matic optfeature python-single-r1 qmake-utils toolchain-funcs xdg virtualx
+inherit check-reqs cmake cuda edo flag-o-matic optfeature python-single-r1 qt-utils toolchain-funcs xdg virtualx
 
 DESCRIPTION="Qt based Computer Aided Design application"
 HOMEPAGE="https://www.freecad.org/ https://github.com/FreeCAD/FreeCAD"
@@ -27,7 +27,7 @@ else
 		https://github.com/FreeCAD/FreeCAD/commit/d91b3e051789623f0bc1eff65947c361e7a661d0.patch -> ${PN}-20710.patch
 		https://github.com/FreeCAD/FreeCAD/commit/9ea0f32692e13eee85b1e74bd42514942d357906.patch -> ${PN}-21433.patch
 	"
-	KEYWORDS="~amd64"
+	KEYWORDS="amd64"
 	S="${WORKDIR}/FreeCAD-${PV}"
 fi
 
@@ -95,7 +95,7 @@ RDEPEND="
 		$(python_gen_cond_dep '
 			dev-python/matplotlib[${PYTHON_USEDEP}]
 			>=dev-python/pivy-0.6.5[${PYTHON_USEDEP}]
-			dev-python/pyside:6=[uitools(-),gui,svg,${PYTHON_USEDEP}]
+			>=dev-python/pyside-6.10.1-r5:6=[uitools(-),gui,svg,${PYTHON_USEDEP}]
 		' )
 		virtual/opengl
 		spacenav? ( dev-libs/libspnav[X?] )
@@ -142,6 +142,7 @@ PATCHES=(
 	"${FILESDIR}/${PN}-1.0.2-pybind11-latent-slots-macro-conflicts-with-Qt.patch" # fixed in pybind-3.0.1
 	"${DISTDIR}/${PN}-20710.patch" # DESTDIR in env
 	"${DISTDIR}/${PN}-21433.patch" # FindHDF5 fails to find HDF5 after a failing pkg_search_module
+	"${FILESDIR}"/${P}-boost-1.89.patch # bug 969041
 )
 
 DOCS=( CODE_OF_CONDUCT.md README.md )
@@ -418,8 +419,8 @@ src_configure() {
 			-DFREECAD_QT_MAJOR_VERSION=6
 			-DFREECAD_QT_VERSION=6
 			-DQT_DEFAULT_MAJOR_VERSION=6
-			-DQt6Core_MOC_EXECUTABLE="$(qt6_get_bindir)/moc"
-			-DQt6Core_RCC_EXECUTABLE="$(qt6_get_bindir)/rcc"
+			-DQt6Core_MOC_EXECUTABLE="$(qt_get_broot_binary 6 moc)"
+			-DQt6Core_RCC_EXECUTABLE="$(qt_get_broot_binary 6 rcc)"
 			-DBUILD_QT5=OFF
 			# Drawing module unmaintained and not ported to qt6
 			-DBUILD_DRAWING=OFF

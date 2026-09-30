@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-USE_RUBY="ruby32 ruby33 ruby34"
+USE_RUBY="ruby32 ruby33 ruby34 ruby40"
 
 RUBY_FAKEGEM_EXTRADOC="History.md README.md"
 
@@ -17,7 +17,7 @@ HOMEPAGE="https://github.com/teamcapybara/capybara"
 LICENSE="MIT"
 
 SLOT="$(ver_cut 1)"
-KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~ppc ~ppc64 ~riscv ~sparc ~x86"
+KEYWORDS="amd64 ~arm ~arm64 ~hppa ~ppc ~ppc64 ~riscv ~sparc ~x86"
 IUSE="test"
 
 DEPEND="${DEPEND} test? ( || ( www-client/firefox www-client/firefox-bin ) )"
@@ -25,10 +25,12 @@ DEPEND="${DEPEND} test? ( || ( www-client/firefox www-client/firefox-bin ) )"
 PATCHES=( "${FILESDIR}/${P}-sinatra.patch" )
 
 ruby_add_bdepend "test? (
+	dev-ruby/bundler
 	dev-ruby/rspec:3
 	>=dev-ruby/launchy-2.4.0
 	>=dev-ruby/selenium-webdriver-4.8:4
 	dev-ruby/sinatra:4
+	dev-ruby/minitest:5
 	www-servers/puma
 )"
 
@@ -57,8 +59,23 @@ all_ruby_prepare() {
 	# Update spec to catch the right error code. This seems to have
 	# changed recently across ruby versions.
 	sed -i -e '/raise_error/ s/EOFError/Net::ReadTimeout/' spec/server_spec.rb || die
+
+	cat <<-EOF > "${T}/Gemfile" || die
+	gem "launchy"
+	gem "matrix"
+	gem "mini_mime"
+	gem "minitest", "~> 5"
+	gem "nokogiri"
+	gem "puma"
+	gem "rack-test"
+	gem "regexp_parser", "~> 2"
+	gem "rspec", "~> 3"
+	gem "selenium-webdriver", "~> 4"
+	gem "sinatra", "~> 4"
+	gem "xpath", "~> 3"
+	EOF
 }
 
 each_ruby_test() {
-	virtx ${RUBY} -Ilib -S rspec-3 spec
+	BUNDLE_GEMFILE="${T}/Gemfile" virtx ${RUBY} -S bundle exec ${RUBY} -Ilib -S rspec-3 spec
 }

@@ -1,4 +1,4 @@
-# Copyright 2025 Gentoo Authors
+# Copyright 2025-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -16,7 +16,7 @@ S="${WORKDIR}/${PN}-${COMMIT_HASH}"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm ~arm64 ~hppa ~loong ~ppc ppc64 ~riscv ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm ~arm64 ~hppa ~loong ~ppc ppc64 ~riscv ~sparc x86"
 IUSE="doc pdf python wmf xslt X"
 REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
 
@@ -54,6 +54,8 @@ PATCHES=(
 	"${WORKDIR}"/dia-0.98-patches/${PN}-0.98-use_gtkfontbutton.patch
 	"${WORKDIR}"/dia-0.98-patches/${PN}-0.98-deps_optional.patch
 	"${FILESDIR}"/${PN}-0.98-fix_poppler_2510.patch #965768
+	"${FILESDIR}"/${PN}-0.98-fix_poppler_2601.patch
+	"${FILESDIR}"/${PN}-0.98-fix_poppler_2602.patch #970103
 )
 
 pkg_setup() {

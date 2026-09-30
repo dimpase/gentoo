@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_12 )
 DISTUTILS_USE_PEP517=setuptools
 inherit distutils-r1
 
@@ -15,7 +15,6 @@ SRC_URI="https://github.com/plotly/plotly.py/archive/refs/tags/v${PLOTLY_PV}.tar
 S="${WORKDIR}/plotly.py-${PLOTLY_PV}/packages/python/${PN}"
 
 # The warning about tests not being enabled is a false positive.
-# Add distutils_enable_tests and restrict the tests to suppress the warning.
 RESTRICT="test"
 
 LICENSE="MIT"
@@ -28,4 +27,3 @@ RDEPEND="
 
 # There are sphinx docs but we are missing a bunch of dependencies.
 # distutils_enable_sphinx ../../../doc/apidoc
-distutils_enable_tests pytest

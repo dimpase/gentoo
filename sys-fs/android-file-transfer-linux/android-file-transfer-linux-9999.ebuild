@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{12..14} )
 inherit cmake python-single-r1 xdg
 
 DESCRIPTION="Android File Transfer for Linux"
@@ -14,7 +14,7 @@ if [[ ${PV} == *9999* ]] ; then
 	EGIT_REPO_URI="https://github.com/whoozle/android-file-transfer-linux.git"
 else
 	SRC_URI="https://github.com/whoozle/android-file-transfer-linux/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~x86"
+	KEYWORDS="~amd64 ~riscv ~x86"
 fi
 
 LICENSE="LGPL-2.1"
@@ -63,4 +63,16 @@ src_configure() {
 	use python && mycmakeargs+=( -DPython_EXECUTABLE="${PYTHON}" )
 
 	cmake_src_configure
+}
+
+src_install() {
+	cmake_src_install
+
+	if use python; then
+		dodoc -r python/example
+		echo "from .aftl import *" > "${BUILD_DIR}"/python/__init__.py || die
+		python_moduleinto aftl
+		python_domodule "${BUILD_DIR}"/python/{__init__.py,*.so}
+		rm "${ED}"/usr/aftl.cpython-*.so || die
+	fi
 }

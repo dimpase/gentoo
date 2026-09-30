@@ -1,4 +1,4 @@
-# Copyright 2022-2025 Gentoo Authors
+# Copyright 2022-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -13,7 +13,7 @@ EAPI=8
 # dev-cpp/wangle
 # dev-util/watchman
 
-inherit cmake
+inherit cmake flag-o-matic
 
 DESCRIPTION="An implementation of the QUIC transport protocol"
 HOMEPAGE="https://github.com/facebook/mvfst"
@@ -21,7 +21,7 @@ SRC_URI="https://github.com/facebook/mvfst/archive/refs/tags/v${PV}.tar.gz -> ${
 
 LICENSE="MIT"
 SLOT="0/${PV}"
-KEYWORDS="~amd64 ~arm64"
+KEYWORDS="amd64 ~arm64"
 IUSE="test"
 RESTRICT="!test? ( test )"
 
@@ -44,6 +44,9 @@ PATCHES=(
 )
 
 src_configure() {
+	# -Wodr with IOBufBatchWriter, at least with -fno-semantic-interposition
+	filter-lto
+
 	local mycmakeargs=(
 		-DCMAKE_INSTALL_MODULE_DIR="$(get_libdir)/cmake/${PN}"
 		-DCMAKE_INSTALL_LIBDIR="$(get_libdir)"

@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="8"
@@ -16,12 +16,12 @@ S="${WORKDIR}/${PN}-${MY_PV}"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="amd64 ~ppc ~ppc64 x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos ~x64-solaris"
+KEYWORDS="amd64 ~ppc ~ppc64 x86 ~arm64-macos ~x64-macos ~x64-solaris"
 IUSE="test"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
-	>=dev-vcs/mercurial-6.6[${PYTHON_USEDEP}]
+	<dev-vcs/mercurial-7.2[${PYTHON_USEDEP}]
 	>=dev-python/dulwich-0.21.6[${PYTHON_USEDEP}]
 "
 DEPEND="

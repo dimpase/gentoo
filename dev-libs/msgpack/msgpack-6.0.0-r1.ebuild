@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,6 +11,7 @@ MY_P="${MY_PN}-${PV}"
 DESCRIPTION="MessagePack is a binary-based efficient data interchange format"
 HOMEPAGE="https://msgpack.org/ https://github.com/msgpack/msgpack-c/"
 SRC_URI="https://github.com/${PN}/${PN}-c/releases/download/c-${PV}/${MY_P}.tar.gz"
+S="${WORKDIR}"/${MY_P}
 
 LICENSE="Boost-1.0"
 # Need the -c as a one-off (can drop on next soname bump) as the library rename
@@ -18,7 +19,7 @@ LICENSE="Boost-1.0"
 # has all the same problems a new SONAME would have.
 # See https://github.com/msgpack/msgpack-c/pull/1053.
 SLOT="0/2-c"
-KEYWORDS="amd64 ~arm arm64 ~ppc ~ppc64 ~riscv x86 ~amd64-linux ~x86-linux ~x64-macos"
+KEYWORDS="amd64 ~arm arm64 ~ppc ~ppc64 ~riscv x86 ~x64-macos"
 IUSE="doc examples test"
 
 RESTRICT="!test? ( test )"
@@ -28,8 +29,6 @@ BDEPEND="doc? ( app-text/doxygen[dot] )
 		dev-cpp/gtest[${MULTILIB_USEDEP}]
 		virtual/zlib:=[${MULTILIB_USEDEP}]
 	)"
-
-S="${WORKDIR}"/${MY_P}
 
 multilib_src_configure() {
 	local mycmakeargs=(

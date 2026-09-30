@@ -1,9 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{12..14} )
 inherit cmake flag-o-matic optfeature python-any-r1 virtualx xdg
 
 DESCRIPTION="The Programmers Solid 3D CAD Modeller"
@@ -57,6 +57,7 @@ REQUIRED_USE="
 "
 
 RDEPEND="
+	dev-cpp/eigen:=
 	dev-libs/boost:=
 	dev-libs/double-conversion:=
 	dev-libs/glib:2
@@ -91,7 +92,6 @@ RDEPEND="
 "
 DEPEND="
 	${RDEPEND}
-	dev-cpp/eigen:3
 "
 BDEPEND="
 	app-alternatives/yacc
@@ -117,6 +117,8 @@ DOCS=(
 	doc/translation.txt
 )
 
+PATCHES=( "${FILESDIR}/${P}-boost-1.89.patch" ) # bug 967652
+
 # NOTE the build system sets up a venv for tests, we could use imagemagick with -DUSE_IMAGE_COMPARE_PY="no"
 python_check_deps() {
 	python_has_version "dev-python/numpy[${PYTHON_USEDEP}]" &&
@@ -133,13 +135,13 @@ src_prepare() {
 		mv -f "${WORKDIR}/MCAD-${MCAD_COMMIT}"/* "${S}/libraries/MCAD/" || die
 	fi
 
+	cmake_src_prepare
+
 	# NOTE adhere CMP0167
 	# https://cmake.org/cmake/help/latest/policy/CMP0167.html
 	sed \
 		-e '/find_package(Boost/s/)/ CONFIG)/g' \
 		-i CMakeLists.txt || die
-
-	cmake_src_prepare
 }
 
 src_configure() {

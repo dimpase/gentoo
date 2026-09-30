@@ -1,7 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
+
+# Note: please bump this together with gui-wm/tinywl
 
 inherit meson
 
@@ -11,9 +13,11 @@ HOMEPAGE="https://gitlab.freedesktop.org/wlroots/wlroots"
 if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://gitlab.freedesktop.org/${PN}/${PN}.git"
 	inherit git-r3
-	SLOT="0.20"
+	SLOT="0.21"
 else
-	SRC_URI="https://gitlab.freedesktop.org/${PN}/${PN}/-/releases/${PV}/downloads/${P}.tar.gz"
+	inherit verify-sig
+	SRC_URI="https://gitlab.freedesktop.org/${PN}/${PN}/-/releases/${PV}/downloads/${P}.tar.gz
+		https://gitlab.freedesktop.org/${PN}/${PN}/-/releases/${PV}/downloads/${P}.tar.gz.sig"
 	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86"
 	SLOT="$(ver_cut 1-2)"
 fi
@@ -27,13 +31,13 @@ REQUIRED_USE="
 	xcb-errors? ( || ( x11-backend X ) )
 "
 
-DEPEND="
-	>=dev-libs/wayland-1.23.1
+RDEPEND="
+	>=dev-libs/wayland-1.24.0
 	media-libs/libglvnd
 	>=media-libs/mesa-24.1.0_rc1[opengl]
-	>=x11-libs/libdrm-2.4.122
+	>=x11-libs/libdrm-2.4.134
 	>=x11-libs/libxkbcommon-1.8.0
-	>=x11-libs/pixman-0.43.0
+	>=x11-libs/pixman-0.46.0
 	drm? (
 		media-libs/libdisplay-info:=
 		sys-apps/hwdata
@@ -61,14 +65,19 @@ DEPEND="
 		x11-base/xwayland
 	)
 "
-RDEPEND="
-	${DEPEND}
+DEPEND="
+	${RDEPEND}
+	>=dev-libs/wayland-protocols-1.47
 "
 BDEPEND="
-	>=dev-libs/wayland-protocols-1.41
 	dev-util/wayland-scanner
 	virtual/pkgconfig
 "
+
+if [[ ${PV} != 9999 ]]; then
+	BDEPEND+=" verify-sig? ( >=sec-keys/openpgp-keys-emersion-20260503 )"
+	VERIFY_SIG_OPENPGP_KEY_PATH="/usr/share/openpgp-keys/emersion.asc"
+fi
 
 src_configure() {
 	# assert SLOT matches the version
@@ -87,7 +96,7 @@ src_configure() {
 		$(meson_feature X xwayland)
 		-Dbackends=${meson_backends}
 		$(meson_feature session)
-		$(meson_feature lcms color-management)
+		$(meson_feature lcms icc-profile)
 		$(meson_feature liftoff libliftoff)
 	)
 

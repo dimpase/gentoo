@@ -1,15 +1,15 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
 DESCRIPTION="Simple but educational LDL^T matrix factorization algorithm"
 HOMEPAGE="http://people.engr.tamu.edu/davis/suitesparse.html"
-SRC_URI="http://202.36.178.9/sage/${P}.tar.bz2"
+SRC_URI="https://github.com/kiwifb/suitesparse_splitbuild/releases/download/v5.4.0/${P}.tar.bz2"
 
 LICENSE="LGPL-2.1+"
 SLOT="0"
-KEYWORDS="amd64 ~arm arm64 ~hppa ~ppc ppc64 ~sparc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~arm arm64 ~hppa ~ppc ppc64 ~sparc ~x86"
 IUSE="doc static-libs"
 
 BDEPEND="virtual/pkgconfig

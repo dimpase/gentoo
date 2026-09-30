@@ -1,10 +1,10 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{11..14} pypy3_11 )
+PYTHON_COMPAT=( python3_{12..15} python3_{14,15}t )
 PYTHON_REQ_USE="xml(+)"
 
 inherit distutils-r1
@@ -39,9 +39,14 @@ RDEPEND="
 	>=dev-python/six-1.9[${PYTHON_USEDEP}]
 	>=dev-python/webencodings-0.5.1[${PYTHON_USEDEP}]
 "
+BDEPEND="
+	dev-python/pkg-resources[${PYTHON_USEDEP}]
+"
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-1.2_pre20240221-py314.patch
+	"${FILESDIR}"/${PN}-1.2_pre20240221-pytest-9.0.patch
+	"${FILESDIR}"/${PN}-1.2_pre20240221-pytest-9.1.patch
 )
 
 EPYTEST_PLUGINS=( pytest-expect )

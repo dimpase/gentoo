@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ HOMEPAGE="https://gitlab.gnome.org/GNOME/gcr"
 LICENSE="GPL-2+ LGPL-2+"
 SLOT="4/gcr-4.4-gck-2.2" # subslot = soname and soversion of libgcr and libgck
 
-KEYWORDS="~alpha amd64 arm arm64 ~loong ~mips ppc ppc64 ~riscv ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 arm arm64 ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
 
 IUSE="gnutls gtk gtk-doc +introspection systemd test +vala"
 REQUIRED_USE="
@@ -35,7 +35,7 @@ RDEPEND="${DEPEND}"
 PDEPEND="app-alternatives/gpg"
 BDEPEND="
 	gtk? ( dev-libs/libxml2:2 )
-	dev-util/gdbus-codegen
+	>=dev-util/gdbus-codegen-2.80.5-r1
 	dev-util/glib-utils
 	gtk-doc? ( dev-util/gi-docgen )
 	>=sys-devel/gettext-0.19.8
@@ -70,7 +70,7 @@ src_configure() {
 }
 
 src_test() {
-	dbus-run-session meson test -C "${BUILD_DIR}" || die 'tests failed'
+	dbus-run-session meson test -C "${BUILD_DIR}" --print-errorlogs || die 'tests failed'
 }
 
 src_install() {

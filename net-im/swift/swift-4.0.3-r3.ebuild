@@ -1,10 +1,10 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 LUA_COMPAT=( lua5-{1..2} luajit )
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 
 inherit lua-single python-any-r1 scons-utils toolchain-funcs
 
@@ -13,6 +13,7 @@ HOMEPAGE="https://www.swift.im/"
 SRC_URI="
 	https://swift.im/git/${PN}/snapshot/${PN}-${P}.tar.bz2 -> ${P}.tar.bz2
 	https://dev.gentoo.org/~conikost/distfiles/patches/${P}-python3-compatibility.patch.gz
+	https://dev.gentoo.org/~conikost/distfiles/patches/${P}-boost-1.87-compatibility.patch.gz
 "
 S="${WORKDIR}/${PN}-${P}"
 
@@ -63,6 +64,8 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-4.0.3-reproducible-build.patch
 	"${FILESDIR}"/${PN}-4.0.3-miniupnpc.patch
 	"${FILESDIR}"/${PN}-4.0.3-scons-4.9.0.patch
+	"${WORKDIR}"/${PN}-4.0.3-boost-1.87-compatibility.patch
+	"${FILESDIR}"/${PN}-4.0.3-boost-1.89-compatibility.patch
 )
 
 pkg_setup() {

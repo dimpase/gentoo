@@ -1,7 +1,9 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
+
+RPM_COMPRESS_TYPE=xz
 
 inherit rpm
 
@@ -17,7 +19,7 @@ BASE_SRC_URI_STABLE="https://download.documentfoundation.org/${PN/-l10n/}/stable
 
 LICENSE="|| ( LGPL-3 MPL-1.1 )"
 SLOT="0"
-KEYWORDS="amd64 ~arm arm64 ~loong ppc64 ~riscv ~x86 ~amd64-linux"
+KEYWORDS="amd64 ~arm arm64 ~loong ppc64 ~riscv ~x86"
 IUSE="offlinehelp"
 
 #

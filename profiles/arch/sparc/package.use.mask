@@ -1,5 +1,81 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
+
+# Lukas Schmelting <lschmelting@posteo.com> (2026-09-10)
+# dev-util/bpftool not keyworded here
+net-misc/networkmanager clat
+
+# David Seifert <soap@gentoo.org> (2026-09-07)
+# sci-libs/libaec is not keyworded here, and >=sci-libs/hdf5-2.2.0
+# requires it directly instead of via virtual/szip
+>=sci-libs/hdf5-2.2.0 szip
+
+# James Le Cuirot <chewi@gentoo.org> (2026-09-05)
+# VIS is a sparc-specific SIMD optimisation.
+media-libs/libggi -vis
+media-libs/xine-lib -vis
+
+# Sam James <sam@gentoo.org> (2026-09-04)
+# sys-apps/xdg-desktop-portal not keyworded here
+x11-base/xwayland libei
+
+# Alfred Wingate <parona@protonmail.com> (2026-07-26)
+# Firefox not keyworded here
+dev-util/selenium-manager test
+
+# Pacho Ramos <pacho@gentoo.org> (2026-07-05)
+# QT6 is not keyworded here, bug #977775
+dev-libs/appstream test
+
+# Viorel Munteanu <ceamac@gentoo.org> (2026-05-14)
+# dev-libs/efl not keyworded here
+app-misc/fastfetch efl
+
+# Pacho Ramos <pacho@gentoo.org> (2026-05-09)
+# dev-libs/appstream not keyworded, bug #977775
+app-misc/media-player-info test
+dev-util/meld test
+
+# Jaco Kroon <jkroon@gentoo.org> (2026-05-04)
+# media-libs/libyuv is not keyworded
+net-libs/pjproject libyuv
+
+# Alfred Wingate <parona@protonmail.com> (2026-05-03)
+# dev-libs/libthai not keyworded here
+x11-libs/pango libthai
+
+# Brett A C Sheffield <bacs@librecast.net> (2026-04-22)
+# virtual/pandoc is not keyworded here
+>=dev-libs/xmlsec-1.3.11 doc
+
+# Sam James <sam@gentoo.org> (2026-04-11)
+# Unkeyworded dependencies
+sys-libs/libcap-ng bpf
+
+# Robin H. Johnson <robbat2@gentoo.org> (2026-03-22)
+# sys-block/vdo not keyworded here
+sys-fs/lvm2 vdo
+
+# Ionen Wolkens <ionen@gentoo.org> (2026-03-16)
+# media-libs/opencolorio is not keyworded here
+media-video/ffmpeg opencolorio
+media-video/ffmpeg-compat opencolorio
+
+# Jaco Kroon <jaco@uls.co.za> (2026-02-06)
+# Requires sys-auth/libyubikey
+net-dialup/freeradius yubikey
+
+# Ian Jordan <immoloism@gmail.com> (2026-02-04)
+# Unkeyworded dependencies (bug #951360)
+app-accessibility/brltty ocaml ocamlopt
+
+# Sam James <sam@gentoo.org> (2026-01-16)
+# Unkeyworded dependencies (bug #968238)
+media-video/pipewire libcamera
+
+# Lukas Schmelting <lschmelting@posteo.com> (2025-11-09)
+# gnome-online-accounts is unkeyworded and in use.mask for sparc
+gnome-base/gvfs gnome-online-accounts google onedrive
 
 # Philipp Rösner <rndxelement@protonmail.com> (2025-09-23)
 # media-libs/zxingcpp is not keyworded here
@@ -55,10 +131,6 @@ media-libs/imlib2 y4m
 # libgccjit testsuite: bug #953775 (https://gcc.gnu.org/PR119767).
 app-editors/emacs jit
 sys-devel/gcc jit
-
-# Cristian Othón Martínez Vera <cfuga@cfuga.mx> (2025-04-09)
-# dev-db/tinycdb is not keyworded here
-mail-mta/sendmail tinycdb
 
 # NRK <nrk@disroot.org> (2025-03-17)
 # media-libs/libyuv is not keyworded
@@ -204,10 +276,6 @@ sys-libs/libnvme keyutils
 # dev-libs/capstone not keyworded here
 dev-lang/php capstone
 
-# Mart Raudsepp <leio@gentoo.org> (2023-12-25)
-# sys-apps/xdg-desktop-portal not keyworded here yet
-x11-base/xwayland libei
-
 # Rolf Eike Beer <eike@sf-mail.de> (2023-12-22)
 # media-video/rav1e isn't keyworded here
 media-libs/libavif rav1e
@@ -224,6 +292,7 @@ media-video/rav1e -capi
 # Michał Górny <mgorny@gentoo.org> (2023-10-15)
 # Need dev-python/notebook (that indirectly requires net-libs/nodejs).
 dev-python/ipython notebook
+dev-python/matplotlib-inline test
 dev-python/nbclient test
 dev-python/nbconvert test
 
@@ -812,3 +881,7 @@ net-im/pidgin zephyr
 # Ultrabug <ultrabug@gentoo.org> (2011-09-05)
 # missing keyword for net-libs/zeromq
 app-admin/rsyslog zeromq
+
+# Lukas Schmelting <lschmelting@posteo.com>
+# Depends on unkeyworded x11-misc/xvfb-run
+>=x11-libs/libnotify-0.8.7 test

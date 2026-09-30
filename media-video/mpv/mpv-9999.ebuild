@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,7 +12,7 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/mpv-player/mpv.git"
 else
 	SRC_URI="https://github.com/mpv-player/mpv/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86 ~amd64-linux"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
 fi
 
 DESCRIPTION="Media player for the command line"
@@ -21,11 +21,11 @@ HOMEPAGE="https://mpv.io/"
 LICENSE="LGPL-2.1+ GPL-2+ BSD ISC MIT" #506946
 SLOT="0/2" # soname
 IUSE="
-	+X +alsa aqua archive bluray cdda +cli coreaudio debug +drm dvb
-	dvd +egl gamepad +iconv jack javascript jpeg lcms libcaca +libmpv
-	+lua nvenc openal pipewire pulseaudio rubberband sdl selinux sixel
-	sndio soc test tools +uchardet vaapi vdpau +vulkan wayland xv zimg
-	zlib
+	+X +alsa aqua archive bluray cdda +cli coreaudio +curl debug +drm
+	dvb dvd +egl gamepad +iconv jack javascript jpeg lcms libcaca
+	+libmpv +lua nvenc openal pipewire pulseaudio rubberband sdl
+	selinux sixel sndio soc subrandr test tools +uchardet vaapi vdpau
+	+vulkan wayland xv zimg zlib
 "
 REQUIRED_USE="
 	${PYTHON_REQUIRED_USE}
@@ -45,8 +45,8 @@ RESTRICT="!test? ( test )"
 
 COMMON_DEPEND="
 	media-libs/libass:=[fontconfig]
-	>=media-libs/libplacebo-7.349.0:=[vulkan?]
-	>=media-video/ffmpeg-6.1:=[encode(+),soc(-)?,threads(+),vaapi?,vdpau?]
+	>=media-libs/libplacebo-7.360.1:=[vulkan?]
+	>=media-video/ffmpeg-6.1:=[encode(+),threads(+),vaapi?,vdpau?]
 	X? (
 		x11-libs/libX11
 		x11-libs/libXScrnSaver
@@ -63,12 +63,16 @@ COMMON_DEPEND="
 		dev-libs/libcdio-paranoia:=
 		dev-libs/libcdio:=
 	)
+	curl? ( net-misc/curl )
 	drm? (
 		media-libs/libdisplay-info:=
 		x11-libs/libdrm
 		egl? ( media-libs/mesa[gbm(+)] )
 	)
-	dvd? ( media-libs/libdvdnav )
+	dvd? (
+		media-libs/libdvdnav
+		>=media-libs/libdvdread-7.1.1:=
+	)
 	egl? (
 		media-libs/libglvnd
 		media-libs/libplacebo[opengl]
@@ -91,6 +95,8 @@ COMMON_DEPEND="
 	sdl? ( media-libs/libsdl2[sound,threads(+),video] )
 	sixel? ( media-libs/libsixel )
 	sndio? ( media-sound/sndio:= )
+	soc? ( >=media-video/ffmpeg-8.1:=[soc(-)] )
+	subrandr? ( >=media-libs/subrandr-1.1.0 )
 	vaapi? ( media-libs/libva:=[X?,drm(+)?,wayland?] )
 	vdpau? (
 		media-libs/libglvnd[X]
@@ -98,7 +104,7 @@ COMMON_DEPEND="
 	)
 	vulkan? ( media-libs/vulkan-loader[X?,wayland?] )
 	wayland? (
-		dev-libs/wayland
+		>=dev-libs/wayland-1.23
 		x11-libs/libxkbcommon
 	)
 	zimg? ( media-libs/zimg )
@@ -125,8 +131,12 @@ BDEPEND="
 	>=dev-build/meson-1.3.0
 	virtual/pkgconfig
 	cli? ( dev-python/docutils )
-	wayland? ( dev-util/wayland-scanner )
+	wayland? ( >=dev-util/wayland-scanner-1.23 )
 "
+
+PATCHES=(
+	"${FILESDIR}"/${PN}-0.41.0-v4l2request.patch
+)
 
 pkg_setup() {
 	use lua && lua-single_pkg_setup
@@ -159,7 +169,9 @@ src_configure() {
 		$(meson_feature bluray libbluray)
 		$(meson_feature cdda)
 		-Dcplugins=enabled
+		$(meson_feature curl libcurl)
 		$(meson_feature dvb dvbin)
+		$(meson_feature dvd dvda)
 		$(meson_feature dvd dvdnav)
 		$(meson_feature gamepad sdl2-gamepad)
 		$(meson_feature iconv)
@@ -168,6 +180,7 @@ src_configure() {
 		$(meson_feature lcms lcms2)
 		-Dlua=$(usex lua "${ELUA}" disabled)
 		$(meson_feature rubberband)
+		$(meson_feature subrandr)
 		$(meson_feature uchardet)
 		-Dvapoursynth=disabled # only available in overlays
 		$(meson_feature zimg)
@@ -204,6 +217,7 @@ src_configure() {
 
 		# hardware decoding
 		$(meson_feature nvenc cuda-hwaccel)
+		$(meson_feature soc v4l2request)
 		$(meson_feature vaapi)
 		$(meson_feature vdpau)
 	)
@@ -241,6 +255,12 @@ src_install() {
 		dodir /usr/share/doc/${PF}/html
 		mv "${ED}"/usr/share/doc/{mpv,${PF}/html}/mpv.html || die
 		mv "${ED}"/usr/share/doc/{mpv,${PF}/examples} || die
+	fi
+
+	# prevent build-only ffnvcodec from leaking into the .pc (bug #971646)
+	if use libmpv && use nvenc; then
+		sed -Ee '/^Requires/s/ffnvcodec[^,]*,? ?//;s/, $//;/^Requires[^:]*: $/d' \
+			-i "${ED}"/usr/$(get_libdir)/pkgconfig/mpv.pc || die
 	fi
 
 	local GLOBIGNORE=*/*build*:*/*policy*

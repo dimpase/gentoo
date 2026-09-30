@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,7 +12,7 @@ SRC_URI="https://github.com/danmar/cppcheck/archive/refs/tags/${PV}.tar.gz -> ${
 
 LICENSE="GPL-3+"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86"
+KEYWORDS="amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv x86"
 IUSE="charts gui htmlreport pcre test"
 REQUIRED_USE="
 	${PYTHON_REQUIRED_USE}
@@ -110,7 +110,11 @@ src_test() {
 	cmake_src_test
 
 	rm test/cli/other_test.py || die
-	use htmlreport && TEST_CPPCHECK_EXE_LOOKUP_PATH="${BUILD_DIR}/bin/" epytest test
+	rm test/cli/lookup_test.py || die
+	rm test/cli/premium_test.py || die
+	if use htmlreport; then
+		PYTHONPATH="${S}/tools" TEST_CPPCHECK_EXE_LOOKUP_PATH="${BUILD_DIR}/bin/" epytest test
+	fi
 }
 
 src_install() {

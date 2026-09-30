@@ -1,10 +1,10 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 GUILE_COMPAT=( 2-2 3-0 )
-LUA_COMPAT=( lua5-{1..4} )
+LUA_COMPAT=( lua5-{3..4} )
 PYTHON_COMPAT=( python3_{11..14} )
 GENTOO_DEPEND_ON_PERL=no
 
@@ -22,8 +22,8 @@ else
 	inherit verify-sig
 	SRC_URI="
 		https://weechat.org/files/src/${P}.tar.xz
+		https://distfiles.s3.rbx.io.cloud.ovh.net/${P}-manpages.tar.xz
 		verify-sig? ( https://weechat.org/files/src/${P}.tar.xz.asc )
-		https://dev.gentoo.org/~eschwartz/distfiles/${CATEGORY}/${PN}/${P}-manpages.tar.xz
 	"
 	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/weechat.org.asc
 	BDEPEND+="verify-sig? ( sec-keys/openpgp-keys-weechat )"
@@ -49,16 +49,16 @@ REQUIRED_USE="
 	guile? ( ${GUILE_REQUIRED_USE} )
 	lua? ( ${LUA_REQUIRED_USE} )
 	python? ( ${PYTHON_REQUIRED_USE} )
-	test? ( nls )
+	test? ( nls python )
 	relay-api? ( relay )
 "
 
 RDEPEND="
-	dev-libs/libgcrypt:0=
-	net-libs/gnutls:=
+	>=dev-libs/libgcrypt-1.8.0:0=
+	>=net-libs/gnutls-3.6.3:=
 	sys-libs/ncurses:0=
 	virtual/zlib:=
-	net-misc/curl[ssl]
+	>=net-misc/curl-7.68.0[ssl]
 	charset? ( virtual/libiconv )
 	guile? ( ${GUILE_DEPS} )
 	lua? ( ${LUA_DEPS} )
@@ -74,16 +74,15 @@ RDEPEND="
 		|| (
 			dev-lang/ruby:3.3
 			dev-lang/ruby:3.2
-			dev-lang/ruby:3.1
 		)
 	)
 	selinux? ( sec-policy/selinux-irc )
 	spell? (
-		enchant? ( app-text/enchant:* )
+		enchant? ( app-text/enchant:2 )
 		!enchant? ( app-text/aspell )
 	)
 	tcl? ( >=dev-lang/tcl-8.4.15:0= )
-	zstd? ( app-arch/zstd:= )
+	zstd? ( >=app-arch/zstd-1.4.0:= )
 "
 
 DEPEND="${RDEPEND}
@@ -101,7 +100,7 @@ DOCS="AUTHORS.md CHANGELOG.md CONTRIBUTING.md UPGRADING.md README.md"
 RESTRICT="!test? ( test )"
 
 maint_pkg_create() {
-	pushd "${S}" > /dev/null
+	pushd "${S}" > /dev/null || die
 
 	local -x BUILD_DIR=${S}-docsonly
 	local mycmakeargs=(
@@ -126,7 +125,7 @@ maint_pkg_create() {
 	if [[ -n ${ver} ]]; then
 		local MY_P="${PN}-${ver}"
 		local tar="${T}/${MY_P}-manpages.tar.xz"
-		bsdtar -s "#^#${MY_P}-manpages/#S" -caf "${tar}" *.1 || die
+		bsdtar -s "#^#${MY_P}-manpages/#S" -caf "${tar}" ./*.1 || die
 		einfo "Packaged tar now available:"
 		einfo "$(du -b "${tar}")"
 	fi
@@ -239,7 +238,7 @@ src_configure() {
 }
 
 src_test() {
-	if $(locale -a | grep -iq "en_US\.utf.*8"); then
+	if locale -a | grep -iq "en_US\.utf.*8"; then
 		cmake_src_test -V
 	else
 		eerror "en_US.UTF-8 locale is required to run ${PN}'s ${FUNCNAME}"

@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ SRC_URI="https://downloads.unidata.ucar.edu/netcdf-fortran/${PV}/${P}.tar.gz -> 
 
 LICENSE="UCAR-Unidata"
 SLOT="0/7"
-KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86"
 IUSE="doc examples static-libs"
 
 RDEPEND="sci-libs/netcdf"
@@ -23,6 +23,11 @@ DEPEND="
 	dev-lang/cfortran
 "
 BDEPEND="doc? ( app-text/doxygen )"
+
+src_prepare() {
+	touch docs/footer.html || die
+	default
+}
 
 src_configure() {
 	# -Werror=lto-type-mismatch

@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ S="${WORKDIR}/${MY_PN}-${PV}"
 
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~ppc ~ppc64 ~riscv ~sparc ~x86"
+KEYWORDS="amd64 arm arm64 ~hppa ~ppc ppc64 ~riscv ~sparc x86"
 
 DEPEND="app-shells/bash:*"
 RDEPEND="${DEPEND}"
@@ -24,7 +24,10 @@ src_test() {
 	if ! command -v parallel >/dev/null; then
 		my_jobs=1
 	fi
-	bin/bats --tap --jobs "${my_jobs}" test || die "Tests failed"
+	# see https://github.com/bats-core/bats-core/issues/1225
+	# BATS_NUMBER_OF_PARALLEL_JOBS should be the same as "--jobs" as we had before
+	# but turns out they are not so testing like upstream does
+	BATS_NUMBER_OF_PARALLEL_JOBS="${my_jobs}" bin/bats --tap test || die "Tests failed"
 }
 
 src_install() {

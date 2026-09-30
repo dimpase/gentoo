@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -21,7 +21,7 @@ else
 	SRC_URI+=" verify-sig? ( https://downloads.sourceforge.net/project/${PN}/${PN}-history/$(ver_cut 1-2)/${MY_P}.tar.xz.asc )"
 	S="${WORKDIR}/${MY_P}"
 
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~x86-linux ~x64-macos"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~ppc ~ppc64 ~riscv ~sparc ~x86 ~x64-macos"
 
 	BDEPEND="verify-sig? ( sec-keys/openpgp-keys-bobfriesenhahn )"
 fi
@@ -37,7 +37,7 @@ RDEPEND="
 	dev-libs/libxml2:=
 	bzip2? ( app-arch/bzip2 )
 	fpx? ( media-libs/libfpx )
-	heif? ( media-libs/libheif:= )
+	heif? ( >=media-libs/libheif-1.20:= )
 	imagemagick? ( !media-gfx/imagemagick )
 	jbig? ( media-libs/jbigkit )
 	jpeg? ( media-libs/libjpeg-turbo:= )

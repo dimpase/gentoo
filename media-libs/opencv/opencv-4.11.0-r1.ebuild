@@ -218,6 +218,7 @@ COMMON_DEPEND="
 		media-libs/harfbuzz:=[${MULTILIB_USEDEP}]
 	)
 	contribovis? ( >=dev-games/ogre-1.12:= )
+	eigen? ( >=dev-cpp/eigen-3.3.8-r1:= )
 	ffmpeg? ( media-video/ffmpeg:0=[${MULTILIB_USEDEP}] )
 	gdal? ( sci-libs/gdal:= )
 	gflags? ( dev-cpp/gflags:=[${MULTILIB_USEDEP}] )
@@ -281,7 +282,7 @@ COMMON_DEPEND="
 		dev-qt/qt5compat:6
 		dev-qt/qtbase:6[gui,widgets,concurrent,opengl?]
 	)
-	quirc? ( media-libs/quirc )
+	quirc? ( media-libs/quirc:=[${MULTILIB_USEDEP}] )
 	tbb? ( dev-cpp/tbb:=[${MULTILIB_USEDEP}] )
 	tesseract? ( app-text/tesseract[${MULTILIB_USEDEP}] )
 	tiff? ( media-libs/tiff:=[${MULTILIB_USEDEP}] )
@@ -293,7 +294,7 @@ COMMON_DEPEND="
 		|| (
 			(
 				sci-libs/vtk[opencascade(+)]
-				sci-libs/opencascade[-ffmpeg]
+				sci-libs/opencascade[-ffmpeg(-)]
 			)
 			sci-libs/vtk[-opencascade(-)]
 		)
@@ -316,7 +317,6 @@ GST_TEST_DEPEND="
 "
 DEPEND="
 	${COMMON_DEPEND}
-	eigen? ( >=dev-cpp/eigen-3.3.8-r1:3 )
 	java? ( >=virtual/jdk-1.8:* )
 	test? (
 		wayland? ( gui-wm/tinywl )

@@ -1,9 +1,11 @@
-# Copyright 2021-2025 Gentoo Authors
+# Copyright 2021-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-LLVM_COMPAT=( {17..21} ) # see .cmake.conf for minimum
+# see QDOC_SUPPORTED_CLANG_VERSIONS in src/qdoc/cmake/QDocConfiguration.cmake
+# for officially supported versions, but newer may work
+LLVM_COMPAT=( {17..22} )
 LLVM_OPTIONAL=1
 
 # behaves very badly when qttools is not already installed, also
@@ -11,9 +13,12 @@ LLVM_OPTIONAL=1
 # and 3rdparty/ tries to FetchContent gtest)
 QT6_RESTRICT_TESTS=1
 
-inherit llvm-r2 optfeature qt6-build xdg
+inherit flag-o-matic llvm-r2 optfeature qt6-build xdg
 
 DESCRIPTION="Qt Tools Collection"
+SRC_URI+="
+	https://distfiles.gentoo.org/pub/dev/ionen@gentoo.org/${PN}-6.11.2-llvm22.patch.xz
+"
 
 if [[ ${QT6_BUILD_TYPE} == release ]]; then
 	KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~loong ~ppc ~ppc64 ~riscv ~x86"
@@ -37,22 +42,14 @@ REQUIRED_USE="
 
 RDEPEND="
 	~dev-qt/qtbase-${PV}:6[widgets?]
-	assistant? (
-		~dev-qt/qtbase-${PV}:6[concurrent,network,sql,sqlite]
-		!dev-qt/assistant:5
-	)
+	assistant? ( ~dev-qt/qtbase-${PV}:6[concurrent,network,sql,sqlite] )
 	designer? (
 		~dev-qt/qtbase-${PV}:6[network,xml,zstd=]
 		zstd? ( app-arch/zstd:= )
-		!<dev-qt/designer-5.15.18-r1:5
 	)
 	kmap2qmap? ( ~dev-qt/qtbase-${PV}:6[evdev] )
-	linguist? (
-		widgets? ( !dev-qt/linguist:5 )
-	)
 	qdbus? (
 		~dev-qt/qtbase-${PV}:6[dbus,xml]
-		widgets? ( !dev-qt/qdbusviewer:5 )
 	)
 	qdoc? (
 		$(llvm_gen_dep '
@@ -72,6 +69,10 @@ DEPEND="
 	)
 "
 
+PATCHES=(
+	"${WORKDIR}"/${PN}-6.11.2-llvm22.patch
+)
+
 src_prepare() {
 	qt6-build_src_prepare
 
@@ -81,6 +82,9 @@ src_prepare() {
 }
 
 src_configure() {
+	# validator.h:25:8: error: type 'struct Validator' ... [-Werror=odr]
+	use linguist && filter-lto
+
 	use qdoc && llvm_chost_setup
 
 	local mycmakeargs=(

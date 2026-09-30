@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ S="${WORKDIR}"/${PN%2}-${PV}
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~ppc ~ppc64 ~sparc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~ppc ~ppc64 ~sparc ~x86"
 IUSE="+cairo"
 
 REQUIRED_USE="cairo? ( ${PYTHON_REQUIRED_USE} )"
@@ -37,6 +37,7 @@ PATCHES=(
 )
 
 pkg_setup() {
+	linux-info_pkg_setup
 	use cairo && python-single-r1_pkg_setup
 }
 
