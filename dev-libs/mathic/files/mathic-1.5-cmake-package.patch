@@ -1,0 +1,197 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5291a2e..3013be7 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,22 +1,22 @@
+-cmake_minimum_required(VERSION 3.12)
++cmake_minimum_required(VERSION 3.18)
+ 
+ set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ 
+ project(mathic VERSION 1.5 LANGUAGES CXX)
+ 
++include(GNUInstallDirs)
++include(CMakePackageConfigHelpers)
++include(CTest)
++
+ option(enable_pqsim "Build pqsim" OFF)
+ option(enable_divsim "Build divsim" OFF)
+ 
+ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+ 
+-find_package(Threads 2.1 REQUIRED QUIET)
+-find_package(Memtailor   REQUIRED)
+-
+-add_library(memtailor STATIC IMPORTED)
+-set_target_properties(memtailor PROPERTIES
+-  IMPORTED_LOCATION             "${MEMTAILOR_LIBRARIES}"
+-  INTERFACE_INCLUDE_DIRECTORIES "${MEMTAILOR_INCLUDE_DIR}")
++find_package(Threads REQUIRED QUIET)
++find_package(Memtailor REQUIRED)
++add_library(memtailor ALIAS memtailor::memtailor)
+ 
+ add_compile_options(
+   -DPACKAGE_NAME="${PROJECT_NAME}"
+@@ -31,16 +31,34 @@ add_compile_options(
+ 
+ add_subdirectory(src)
+ 
+-set_target_properties(mathic PROPERTIES PUBLIC_HEADER src/mathic.h)
++set_target_properties(mathic PROPERTIES
++  VERSION 0.0.5 SOVERSION 0 PUBLIC_HEADER src/mathic.h)
++install(TARGETS mathic EXPORT mathicTargets
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++install(DIRECTORY src/mathic DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
++  FILES_MATCHING PATTERN "*.h")
++install(FILES README.md lgpl-2.0.txt lgpl-2.1.txt lgpl-3.0.txt DESTINATION ${CMAKE_INSTALL_DOCDIR})
+ 
+-install(TARGETS mathic LIBRARY DESTINATION lib)
+-install(DIRECTORY src/mathic
+-  DESTINATION include
+-  FILES_MATCHING PATTERN "*.h"
+-  )
+-install(FILES README.md lgpl-2.0.txt lgpl-2.1.txt lgpl-3.0.txt
+-  DESTINATION licenses/mathic
+-  )
++set(mathic_cmakedir "${CMAKE_INSTALL_LIBDIR}/cmake/mathic")
++configure_package_config_file(cmake/mathicConfig.cmake.in
++  "${CMAKE_CURRENT_BINARY_DIR}/mathicConfig.cmake.in"
++  INSTALL_DESTINATION "${mathic_cmakedir}")
++file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mathicConfig.cmake"
++  INPUT "${CMAKE_CURRENT_BINARY_DIR}/mathicConfig.cmake.in")
++write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/mathicConfigVersion.cmake"
++  VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
++install(FILES cmake/FindMemtailor.cmake DESTINATION "${mathic_cmakedir}")
++install(EXPORT mathicTargets NAMESPACE mathic:: DESTINATION "${mathic_cmakedir}")
++install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mathicConfig.cmake"
++  "${CMAKE_CURRENT_BINARY_DIR}/mathicConfigVersion.cmake" DESTINATION "${mathic_cmakedir}")
++configure_file(cmake/mathic.pc.in mathic.pc.in @ONLY)
++file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mathic.pc"
++  INPUT "${CMAKE_CURRENT_BINARY_DIR}/mathic.pc.in")
++install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mathic.pc"
++  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+ 
+ if(enable_pqsim)
+ add_executable(pqsim
+diff --git a/cmake/FindMemtailor.cmake b/cmake/FindMemtailor.cmake
+index da04bdc..3672613 100644
+--- a/cmake/FindMemtailor.cmake
++++ b/cmake/FindMemtailor.cmake
+@@ -1,24 +1,24 @@
+-# Try to find the MEMTAILOR libraries
+-# See https://github.com/Macaulay2/memtailor
+-#
+-# This file sets up GLPK for CMake. Once done this will define
+-#  MEMTAILOR_FOUND             - system has MEMTAILOR lib
+-#  MEMTAILOR_INCLUDE_DIR       - the MEMTAILOR include directory
+-#  MEMTAILOR_LIBRARIES         - Libraries needed to use MEMTAILOR
+-#
++# Prefer the upstream config; pkg-config also carries the dependency's ABI flags.
+ # Copyright (c) 2020, Mahrud Sayrafi, <mahrud@umn.edu>
+-#
+ # Redistribution and use is allowed according to the terms of the BSD license.
+-
+-find_path(MEMTAILOR_INCLUDE_DIR NAMES memtailor.h
+-  PATHS ${INCLUDE_INSTALL_DIR} ${CMAKE_INSTALL_PREFIX}/include
+-  PATH_SUFFIXES memtailor
+-  )
+-find_library(MEMTAILOR_LIBRARIES NAMES memtailor
+-  PATHS ${LIB_INSTALL_DIR} ${CMAKE_INSTALL_PREFIX}/lib
+-  )
+-
++if(NOT TARGET memtailor::memtailor)
++  find_package(memtailor CONFIG QUIET)
++endif()
++if(NOT TARGET memtailor::memtailor)
++  find_package(PkgConfig QUIET)
++  if(PKG_CONFIG_FOUND)
++    pkg_check_modules(MEMTAILOR QUIET IMPORTED_TARGET memtailor)
++    if(TARGET PkgConfig::MEMTAILOR)
++      add_library(memtailor::memtailor INTERFACE IMPORTED)
++      set_property(TARGET memtailor::memtailor PROPERTY
++        INTERFACE_LINK_LIBRARIES PkgConfig::MEMTAILOR)
++    endif()
++  endif()
++endif()
++set(MEMTAILOR_FOUND FALSE)
++if(TARGET memtailor::memtailor)
++  set(MEMTAILOR_FOUND TRUE)
++  set(MEMTAILOR_LIBRARIES memtailor::memtailor)
++endif()
+ include(FindPackageHandleStandardArgs)
+-FIND_PACKAGE_HANDLE_STANDARD_ARGS(Memtailor DEFAULT_MSG MEMTAILOR_INCLUDE_DIR MEMTAILOR_LIBRARIES)
+-
+-mark_as_advanced(MEMTAILOR_INCLUDE_DIR MEMTAILOR_LIBRARIES)
++find_package_handle_standard_args(Memtailor DEFAULT_MSG MEMTAILOR_FOUND)
+diff --git a/cmake/mathic.pc.in b/cmake/mathic.pc.in
+new file mode 100644
+index 0000000..a0692d8
+--- /dev/null
++++ b/cmake/mathic.pc.in
+@@ -0,0 +1,12 @@
++prefix=@CMAKE_INSTALL_PREFIX@
++libdir=@CMAKE_INSTALL_FULL_LIBDIR@
++includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
++
++Name: mathic
++Description: mathic library for Groebner basis computations
++URL: https://github.com/Macaulay2/mathic
++Version: @PROJECT_VERSION@
++Requires: memtailor
++Libs: -L${libdir} -lmathic
++Libs.private: @CMAKE_THREAD_LIBS_INIT@
++Cflags: -I${includedir} $<$<CONFIG:Debug>:-DMATHIC_DEBUG>
+diff --git a/cmake/mathicConfig.cmake.in b/cmake/mathicConfig.cmake.in
+new file mode 100644
+index 0000000..dee18be
+--- /dev/null
++++ b/cmake/mathicConfig.cmake.in
+@@ -0,0 +1,14 @@
++@PACKAGE_INIT@
++include(CMakeFindDependencyMacro)
++find_dependency(Threads)
++set(_mathic_module_path "${CMAKE_MODULE_PATH}")
++list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_LIST_DIR}")
++find_dependency(Memtailor)
++set(CMAKE_MODULE_PATH "${_mathic_module_path}")
++include("${CMAKE_CURRENT_LIST_DIR}/mathicTargets.cmake")
++# The ABI is determined by the installed library, not the consumer build type.
++if($<CONFIG:Debug>)
++  set_property(TARGET mathic::mathic APPEND PROPERTY
++    INTERFACE_COMPILE_DEFINITIONS MATHIC_DEBUG)
++endif()
++check_required_components(mathic)
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index f51b537..6b200fa 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1,7 +1,3 @@
+-if(CMAKE_BUILD_TYPE STREQUAL Debug)
+-  add_compile_options(-DMATHIC_DEBUG -DMEMT_DEBUG)
+-endif()
+-
+ add_library(mathic
+   mathic.h
+   mathic.cpp
+@@ -35,11 +31,16 @@ add_library(mathic
+   mathic/stdinc.h
+   )
+ 
++add_library(mathic::mathic ALIAS mathic)
++target_compile_features(mathic PUBLIC cxx_std_17)
++# Export the installed library's ABI; dependency targets supply their own flags.
++target_compile_definitions(mathic PUBLIC $<BUILD_INTERFACE:$<$<CONFIG:Debug>:MATHIC_DEBUG>>)
++
+ target_link_libraries(mathic memtailor Threads::Threads)
+ 
+ target_include_directories(mathic PUBLIC
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+-  $<INSTALL_INTERFACE:include>
++  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+   )
+ 
+ include(CTest)
