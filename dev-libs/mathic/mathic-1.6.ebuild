@@ -7,7 +7,7 @@ inherit cmake
 
 DESCRIPTION="C++ data structures for Groebner basis computations"
 HOMEPAGE="https://github.com/Macaulay2/mathic"
-SRC_URI="https://github.com/Macaulay2/${PN}/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/Macaulay2/${PN}/releases/download/v${PV}/${P}.tar.gz"
 
 LICENSE="LGPL-2+"
 SLOT="0/0"
@@ -19,7 +19,6 @@ RDEPEND=">=dev-libs/memtailor-1.4-r1:="
 DEPEND="${RDEPEND}
 	test? ( >=dev-cpp/gtest-1.10.0 )"
 
-PATCHES=( "${FILESDIR}/${P}-cmake-package.patch" )
 DOCS=( README.md )
 
 src_configure() {
