@@ -10,7 +10,7 @@ HOMEPAGE="https://msolve.lip6.fr/ https://github.com/algebraic-solving/msolve"
 SRC_URI="https://github.com/algebraic-solving/${PN}/releases/download/v${PV}/${P}.tar.gz"
 
 LICENSE="GPL-2+"
-SLOT="0/3"
+SLOT="0/4"
 KEYWORDS="~amd64"
 IUSE="+openmp test"
 RESTRICT="!test? ( test )"
