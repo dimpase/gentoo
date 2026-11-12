@@ -198,9 +198,7 @@ src_install() {
 		rm -r "${ED}${dest}"/_gdbm* || die
 	fi
 	if ! use test-install; then
-		rm -r "${ED}${dest}"/{ctypes,tkinter,unittest}/test \
-			"${ED}${dest}"/{distutils,lib2to3}/tests \
-			"${ED}${dest}"/idlelib/idle_test || die
+		rm -r "${ED}${dest}"/idlelib/idle_test || die
 	fi
 	if ! use sqlite; then
 		rm -r "${ED}${dest}"/sqlite3 \
@@ -210,7 +208,7 @@ src_install() {
 	if ! use tk; then
 		rm -r "${ED}${dest}"/{idlelib,tkinter} \
 			"${ED}${dest}"/_tkinter \
-			"${ED}${dest}"/test/test_{tcl,tk,ttk*}.py || die
+			"${ED}${dest}"/test/test_{tcl,ttk*}.py || die
 	fi
 	# remove test last since we have some file removals above
 	if ! use test-install; then

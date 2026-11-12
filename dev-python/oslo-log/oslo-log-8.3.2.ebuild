@@ -18,7 +18,7 @@ HOMEPAGE="
 
 LICENSE="Apache-2.0"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~riscv ~x86"
+KEYWORDS="amd64 ~arm arm64 ~riscv x86"
 
 RDEPEND="
 	>=dev-python/debtcollector-3.0.0[${PYTHON_USEDEP}]
@@ -44,9 +44,6 @@ distutils_enable_tests unittest
 src_test() {
 	# requires eventlet
 	rm oslo_log/tests/unit/test_pipe_mutex.py || die
-	# suddenly started failing on py3.13 (also in old version)
-	sed -i -e 's:test_rate_limit:_&:' \
-		oslo_log/tests/unit/test_rate_limit.py || die
 
 	distutils-r1_src_test
 }

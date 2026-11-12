@@ -4,7 +4,7 @@
 EAPI=8
 
 LUA_COMPAT=( lua5-4 )
-PYTHON_COMPAT=( python3_{10..14} )
+PYTHON_COMPAT=( python3_{10..15} )
 
 inherit lua-single meson python-any-r1 readme.gentoo-r1 xdg-utils
 
@@ -140,9 +140,12 @@ src_test() {
 	xdg_environment_reset
 	addwrite /dev/dri/
 
-	# xwayland test can fail if X11 socket already exists.
-	cd "${BUILD_DIR}" || die
-	meson test $(meson test --list | grep -Exv "weston:xwayland") || die
+	local -a EMESON_SKIP_TESTS=(
+		# xwayland test can fail if X11 socket already exists.
+		weston:xwayland
+	)
+
+	meson_src_test
 }
 
 src_install() {

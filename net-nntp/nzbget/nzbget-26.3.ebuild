@@ -21,7 +21,7 @@ SRC_URI="
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~x86"
+KEYWORDS="amd64 arm ~arm64 ppc x86"
 IUSE="ncurses +parcheck ssl test zlib"
 RESTRICT="!test? ( test )"
 
@@ -53,6 +53,10 @@ PATCHES=(
 	"${FILESDIR}/${PN}-26.3-build-with-par2-turbo-offline.patch"
 	# Required to use rapidyenc downloaded into the source directory
 	"${FILESDIR}/${PN}-26.3-build-with-rapidyenc-offline.patch"
+	# Fix build and TLS protocol version negotiation with OpenSSL 4, taken from
+	# https://github.com/nzbgetcom/nzbget/pull/1051 and
+	# https://github.com/nzbgetcom/nzbget/pull/1056
+	"${FILESDIR}/${PN}-26.3-openssl-4.patch"
 )
 
 src_prepare() {

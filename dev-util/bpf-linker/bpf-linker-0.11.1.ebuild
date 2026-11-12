@@ -15,7 +15,7 @@ LLVM_COMPAT=( {21..23} )
 RUST_REQ_USE="llvm_targets_BPF(+),rust_sysroots_bpf(-)"
 RUST_NEEDS_LLVM=1
 
-inherit cargo llvm-r1 toolchain-funcs
+inherit cargo llvm-r2 toolchain-funcs
 
 DESCRIPTION="Simple BPF static linker"
 HOMEPAGE="https://github.com/aya-rs/bpf-linker/"
@@ -33,7 +33,7 @@ LICENSE+="
 	|| ( Apache-2.0 Boost-1.0 )
 "
 SLOT="0"
-KEYWORDS="~amd64 ~arm64"
+KEYWORDS="amd64 ~arm64"
 IUSE="test"
 RESTRICT="!test? ( test )"
 
