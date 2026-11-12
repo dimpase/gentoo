@@ -1,0 +1,330 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c57ada8..2a0ff51 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.12)
++cmake_minimum_required(VERSION 3.18)
+ 
+ set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+@@ -6,56 +6,102 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ project(mathicgb VERSION 1.4 LANGUAGES CXX)
+ 
+ option(enable_mgb "Build mgb" ON)
+-option(with_tbb "use TBB for multithreading" auto)
++
++# ON requires TBB, OFF builds without it, and auto uses it if it can be found.
++set(with_tbb auto CACHE STRING
++  "use TBB for multithreading: ON, OFF, or auto to use it if it is found")
++set_property(CACHE with_tbb PROPERTY STRINGS auto ON OFF)
+ 
+ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+ 
+-find_package(Threads 2.1 REQUIRED QUIET)
++find_package(Threads REQUIRED QUIET)
+ find_package(Memtailor   REQUIRED)
+ find_package(Mathic      REQUIRED)
+-if(with_tbb)
+-  find_package(TBB       REQUIRED)
+-elseif(with_tbb STREQUAL auto)
++# The auto case has to be tested first, as if(with_tbb) is true for "auto".
++# Every branch resolves with_tbb to a plain boolean, which shadows the cache
++# entry for the generator expressions in src/CMakeLists.txt.
++if(with_tbb STREQUAL "auto")
+   find_package(TBB)
+-  set(with_tbb ${TBB_FOUND})
++  if(TBB_FOUND)
++    set(with_tbb ON)
++  else()
++    set(with_tbb OFF)
++    message(WARNING "TBB not detected.  Compiling without multithreading "
++      "and without precise timing.")
++  endif()
++elseif(with_tbb)
++  find_package(TBB       REQUIRED)
++  set(with_tbb ON)
++else()
++  set(with_tbb OFF)
+ endif()
++message(STATUS "Multithreading with TBB: ${with_tbb}")
+ 
+-add_library(memtailor STATIC IMPORTED)
+-set_target_properties(memtailor PROPERTIES
+-  IMPORTED_LOCATION             "${MEMTAILOR_LIBRARIES}"
+-  INTERFACE_INCLUDE_DIRECTORIES "${MEMTAILOR_INCLUDE_DIR}")
+-
+-add_library(mathic STATIC IMPORTED)
+-set_target_properties(mathic PROPERTIES
+-  IMPORTED_LOCATION             "${MATHIC_LIBRARIES}"
+-  INTERFACE_INCLUDE_DIRECTORIES "${MATHIC_INCLUDE_DIR}")
++add_library(memtailor ALIAS memtailor::memtailor)
++add_library(mathic ALIAS mathic::mathic)
+ 
+-add_compile_options(
+-  -DHAVE_CXX11=1
+-  -DPACKAGE_NAME="${PROJECT_NAME}"
+-  -DPACKAGE_TARNAME="${PROJECT_NAME}"
+-  -DPACKAGE_VERSION="${PROJECT_VERSION}"
+-  -DPACKAGE_STRING="${PROJECT_NAME} ${PROJECT_VERSION}"
+-  -DPACKAGE_BUGREPORT=""
+-  -DPACKAGE_URL=""
+-  -DPACKAGE="${PROJECT_NAME}"
+-  -Wall -Wextra -Wno-unused-parameter -Wno-unused-value -Wno-unused-variable -Wno-sign-compare
+-  )
++include(GNUInstallDirs)
++include(CMakePackageConfigHelpers)
++include(CTest)
+ 
+ add_subdirectory(src)
+ 
+-set_target_properties(mathicgb PROPERTIES PUBLIC_HEADER src/mathicgb.h)
++set(MATHICGB_SO_CURRENT  0)
++set(MATHICGB_SO_REVISION 4)
++set(MATHICGB_SO_AGE      0)
++math(EXPR MATHICGB_SOVERSION "${MATHICGB_SO_CURRENT} - ${MATHICGB_SO_AGE}")
+ 
+-install(TARGETS mathicgb LIBRARY DESTINATION lib)
++set_target_properties(mathicgb PROPERTIES
++  PUBLIC_HEADER src/mathicgb.h
++  VERSION ${MATHICGB_SOVERSION}.${MATHICGB_SO_AGE}.${MATHICGB_SO_REVISION}
++  SOVERSION ${MATHICGB_SOVERSION})
++
++install(TARGETS mathicgb EXPORT mathicgbTargets
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ install(DIRECTORY src/mathicgb
+-  DESTINATION include
++  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+   FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
+   )
+-install(FILES doc/mgb.1 TYPE MAN)
++install(FILES doc/mgb.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
++
++set(prefix "${CMAKE_INSTALL_PREFIX}")
++set(exec_prefix "\${prefix}")
++set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
++set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
++set(PACKAGE_VERSION "${PROJECT_VERSION}")
++set(PC_REQUIRES "memtailor mathic")
++if(with_tbb)
++  string(APPEND PC_REQUIRES " tbb")
++else()
++  set(PC_CFLAGS "-DMATHICGB_NO_TBB")
++endif()
++string(APPEND PC_CFLAGS " $<$<CONFIG:Debug>:-DMATHICGB_DEBUG>")
++configure_file(mathicgb.pc.in mathicgb.pc.in @ONLY)
++file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mathicgb.pc"
++  INPUT "${CMAKE_CURRENT_BINARY_DIR}/mathicgb.pc.in")
++install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mathicgb.pc"
++  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
++  )
+ install(FILES README.md gpl-2.0.txt gpl-3.0.txt
+-  DESTINATION licenses/mathicgb
++  DESTINATION ${CMAKE_INSTALL_DOCDIR}
+   )
+ 
++set(mathicgb_cmakedir "${CMAKE_INSTALL_LIBDIR}/cmake/mathicgb")
++configure_package_config_file(cmake/mathicgbConfig.cmake.in
++  "${CMAKE_CURRENT_BINARY_DIR}/mathicgbConfig.cmake.in"
++  INSTALL_DESTINATION "${mathicgb_cmakedir}")
++file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mathicgbConfig.cmake"
++  INPUT "${CMAKE_CURRENT_BINARY_DIR}/mathicgbConfig.cmake.in")
++write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/mathicgbConfigVersion.cmake"
++  VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
++install(FILES cmake/FindMemtailor.cmake cmake/FindMathic.cmake cmake/FindTBB.cmake DESTINATION "${mathicgb_cmakedir}")
++install(EXPORT mathicgbTargets NAMESPACE mathicgb:: DESTINATION "${mathicgb_cmakedir}")
++install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mathicgbConfig.cmake"
++  "${CMAKE_CURRENT_BINARY_DIR}/mathicgbConfigVersion.cmake" DESTINATION "${mathicgb_cmakedir}")
++
+ if(enable_mgb)
+   add_executable(mgb
+     src/cli/GBMain.cpp
+@@ -68,5 +114,5 @@ if(enable_mgb)
+     src/cli/VersionAction.hpp  src/cli/VersionAction.cpp
+     )
+   target_link_libraries(mgb mathicgb)
+-  install(TARGETS mgb RUNTIME DESTINATION bin)
++  install(TARGETS mgb RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+ endif()
+diff --git a/cmake/FindMathic.cmake b/cmake/FindMathic.cmake
+index 912063d..d6d8901 100644
+--- a/cmake/FindMathic.cmake
++++ b/cmake/FindMathic.cmake
+@@ -1,24 +1,24 @@
+-# Try to find the mathic libraries
+-# See https://github.com/Macaulay2/mathic
+-#
+-# This file sets up mathic for CMake. Once done this will define
+-#  MATHIC_FOUND             - system has MATHIC lib
+-#  MATHIC_INCLUDE_DIR       - the MATHIC include directory
+-#  MATHIC_LIBRARIES         - Libraries needed to use MATHIC
+-#
++# Prefer the upstream config; pkg-config also carries the dependency's ABI flags.
+ # Copyright (c) 2020, Mahrud Sayrafi, <mahrud@umn.edu>
+-#
+ # Redistribution and use is allowed according to the terms of the BSD license.
+-
+-find_path(MATHIC_INCLUDE_DIR NAMES mathic.h
+-  PATHS ${INCLUDE_INSTALL_DIR} ${CMAKE_INSTALL_PREFIX}/include
+-  PATH_SUFFIXES mathic
+-  )
+-find_library(MATHIC_LIBRARIES NAMES mathic
+-  PATHS ${LIB_INSTALL_DIR} ${CMAKE_INSTALL_PREFIX}/lib
+-  )
+-
++if(NOT TARGET mathic::mathic)
++  find_package(mathic CONFIG QUIET)
++endif()
++if(NOT TARGET mathic::mathic)
++  find_package(PkgConfig QUIET)
++  if(PKG_CONFIG_FOUND)
++    pkg_check_modules(MATHIC QUIET IMPORTED_TARGET mathic)
++    if(TARGET PkgConfig::MATHIC)
++      add_library(mathic::mathic INTERFACE IMPORTED)
++      set_property(TARGET mathic::mathic PROPERTY
++        INTERFACE_LINK_LIBRARIES PkgConfig::MATHIC)
++    endif()
++  endif()
++endif()
++set(MATHIC_FOUND FALSE)
++if(TARGET mathic::mathic)
++  set(MATHIC_FOUND TRUE)
++  set(MATHIC_LIBRARIES mathic::mathic)
++endif()
+ include(FindPackageHandleStandardArgs)
+-FIND_PACKAGE_HANDLE_STANDARD_ARGS(Mathic DEFAULT_MSG MATHIC_INCLUDE_DIR MATHIC_LIBRARIES)
+-
+-mark_as_advanced(MATHIC_INCLUDE_DIR MATHIC_LIBRARIES)
++find_package_handle_standard_args(Mathic DEFAULT_MSG MATHIC_FOUND)
+diff --git a/cmake/FindMemtailor.cmake b/cmake/FindMemtailor.cmake
+index da04bdc..3672613 100644
+--- a/cmake/FindMemtailor.cmake
++++ b/cmake/FindMemtailor.cmake
+@@ -1,24 +1,24 @@
+-# Try to find the MEMTAILOR libraries
+-# See https://github.com/Macaulay2/memtailor
+-#
+-# This file sets up GLPK for CMake. Once done this will define
+-#  MEMTAILOR_FOUND             - system has MEMTAILOR lib
+-#  MEMTAILOR_INCLUDE_DIR       - the MEMTAILOR include directory
+-#  MEMTAILOR_LIBRARIES         - Libraries needed to use MEMTAILOR
+-#
++# Prefer the upstream config; pkg-config also carries the dependency's ABI flags.
+ # Copyright (c) 2020, Mahrud Sayrafi, <mahrud@umn.edu>
+-#
+ # Redistribution and use is allowed according to the terms of the BSD license.
+-
+-find_path(MEMTAILOR_INCLUDE_DIR NAMES memtailor.h
+-  PATHS ${INCLUDE_INSTALL_DIR} ${CMAKE_INSTALL_PREFIX}/include
+-  PATH_SUFFIXES memtailor
+-  )
+-find_library(MEMTAILOR_LIBRARIES NAMES memtailor
+-  PATHS ${LIB_INSTALL_DIR} ${CMAKE_INSTALL_PREFIX}/lib
+-  )
+-
++if(NOT TARGET memtailor::memtailor)
++  find_package(memtailor CONFIG QUIET)
++endif()
++if(NOT TARGET memtailor::memtailor)
++  find_package(PkgConfig QUIET)
++  if(PKG_CONFIG_FOUND)
++    pkg_check_modules(MEMTAILOR QUIET IMPORTED_TARGET memtailor)
++    if(TARGET PkgConfig::MEMTAILOR)
++      add_library(memtailor::memtailor INTERFACE IMPORTED)
++      set_property(TARGET memtailor::memtailor PROPERTY
++        INTERFACE_LINK_LIBRARIES PkgConfig::MEMTAILOR)
++    endif()
++  endif()
++endif()
++set(MEMTAILOR_FOUND FALSE)
++if(TARGET memtailor::memtailor)
++  set(MEMTAILOR_FOUND TRUE)
++  set(MEMTAILOR_LIBRARIES memtailor::memtailor)
++endif()
+ include(FindPackageHandleStandardArgs)
+-FIND_PACKAGE_HANDLE_STANDARD_ARGS(Memtailor DEFAULT_MSG MEMTAILOR_INCLUDE_DIR MEMTAILOR_LIBRARIES)
+-
+-mark_as_advanced(MEMTAILOR_INCLUDE_DIR MEMTAILOR_LIBRARIES)
++find_package_handle_standard_args(Memtailor DEFAULT_MSG MEMTAILOR_FOUND)
+diff --git a/cmake/mathicgbConfig.cmake.in b/cmake/mathicgbConfig.cmake.in
+new file mode 100644
+index 0000000..ef60a8f
+--- /dev/null
++++ b/cmake/mathicgbConfig.cmake.in
+@@ -0,0 +1,18 @@
++@PACKAGE_INIT@
++include(CMakeFindDependencyMacro)
++find_dependency(Threads)
++set(_mathicgb_module_path "${CMAKE_MODULE_PATH}")
++list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_LIST_DIR}")
++find_dependency(Memtailor)
++find_dependency(Mathic)
++if(@with_tbb@)
++  find_dependency(TBB)
++endif()
++set(CMAKE_MODULE_PATH "${_mathicgb_module_path}")
++include("${CMAKE_CURRENT_LIST_DIR}/mathicgbTargets.cmake")
++# The ABI is determined by the installed library, not the consumer build type.
++if($<CONFIG:Debug>)
++  set_property(TARGET mathicgb::mathicgb APPEND PROPERTY
++    INTERFACE_COMPILE_DEFINITIONS MATHICGB_DEBUG)
++endif()
++check_required_components(mathicgb)
+diff --git a/mathicgb.pc.in b/mathicgb.pc.in
+new file mode 100644
+index 0000000..fc66ee4
+--- /dev/null
++++ b/mathicgb.pc.in
+@@ -0,0 +1,13 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: mathicgb
++Description: C++ library for Groebner basis computation
++URL: https://github.com/Macaulay2/mathicgb
++Requires: @PC_REQUIRES@
++Version: @PACKAGE_VERSION@
++Libs: -L${libdir} -lmathicgb
++Libs.private: @PC_LIBS_PRIVATE@
++Cflags: -I${includedir}/ @PC_CFLAGS@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index c152e06..8cceca0 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1,7 +1,3 @@
+-if(CMAKE_BUILD_TYPE STREQUAL Debug)
+-  add_compile_options(-DMATHICGB_DEBUG -DMATHIC_DEBUG -DMEMT_DEBUG)
+-endif()
+-
+ add_library(mathicgb
+   mathicgb.h
+   mathicgb.cpp
+@@ -61,8 +57,12 @@ add_library(mathicgb
+   mathicgb/stdinc.h
+   )
+ 
+-target_compile_options(mathicgb PUBLIC
+-  $<$<NOT:$<BOOL:${with_tbb}>>:-DMATHICGB_NO_TBB>
++add_library(mathicgb::mathicgb ALIAS mathicgb)
++target_compile_features(mathicgb PUBLIC cxx_std_17)
++
++target_compile_definitions(mathicgb PUBLIC
++  $<$<NOT:$<BOOL:${with_tbb}>>:MATHICGB_NO_TBB>
++  $<BUILD_INTERFACE:$<$<CONFIG:Debug>:MATHICGB_DEBUG>>
+   )
+ 
+ target_link_libraries(mathicgb
+@@ -72,7 +72,7 @@ target_link_libraries(mathicgb
+ 
+ target_include_directories(mathicgb PUBLIC
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+-  $<INSTALL_INTERFACE:include>
++  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+   )
+ 
+ include(CTest)
