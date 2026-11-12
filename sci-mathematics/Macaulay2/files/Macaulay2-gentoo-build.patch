@@ -1,0 +1,57 @@
+Use only system dependencies; do not build external library tests or fetch npm assets.
+
+--- a/M2/CMakeLists.txt
++++ b/M2/CMakeLists.txt
+@@ -70,7 +70,8 @@
+ include(configure) ## CMake script for configuring various variables
+ include(gcov)      ## CMake targets for gcc/gcov code coverage
+ include(check-libraries) ## CMake script for checking which libraries exist and which need to be built
+-include(build-libraries) ## CMake script for downloading, building, and installing external libraries
++include(gentoo-system-libraries) # Gentoo forbids build-time downloads
++# include(build-libraries) ## CMake script for downloading, building, and installing external libraries
+ include(startup) ## CMake script for messy substitutions in Macaulay2/bin/startup.c
+ 
+ ###############################################################################
+--- a/M2/Macaulay2/e/CMakeLists.txt
++++ b/M2/Macaulay2/e/CMakeLists.txt
+@@ -6,7 +6,7 @@
+ set(with_tbb ${WITH_TBB}) # for mathicgb
+ 
+ include(select-mathic-libraries)
+-include(mathic-library-tests)
++# External libraries are tested by their own Gentoo packages.
+ 
+ if(NOT _mathicgb_external)
+   target_compile_options(mathicgb PRIVATE
+--- a/M2/Macaulay2/editors/CMakeLists.txt
++++ b/M2/Macaulay2/editors/CMakeLists.txt
+@@ -64,7 +64,7 @@
+ file(COPY prism/ DESTINATION ${PRISM_DIR}
+   FILES_MATCHING PATTERN "*.json" PATTERN "*.js" PATTERN "*.css")
+ 
+-if(NOT NPM)
++if(TRUE) # Use the checked-in syntax assets; never run npm during emerge.
+   return()
+ endif()
+ 
+--- a/M2/cmake/startup.cmake
++++ b/M2/cmake/startup.cmake
+@@ -56,7 +56,7 @@
+ # These locations are Macaulay2 conventions
+ set(libm2dir	${libdir}/Macaulay2)
+ set(emacsdir	${datarootdir}/emacs/site-lisp/macaulay2)
+-set(GFTABLESDIR	${datarootdir}/Macaulay2/Core/factory/)
++set(GFTABLESDIR "${GFTABLESDIR}/") # Use Singular's system tables
+ set(packagesdir	${datarootdir}/Macaulay2)
+ set(programsdir	${libexecdir}/Macaulay2/bin)
+ set(licensesdir	${libexecdir}/Macaulay2/program-licenses)
+--- a/M2/Macaulay2/e/unit-tests/util-polyring-creation.cpp
++++ b/M2/Macaulay2/e/unit-tests/util-polyring-creation.cpp
+@@ -74,6 +74,7 @@
+                              degs,
+                              heft
+                              );
++  return M;
+ }
+ 
+                            

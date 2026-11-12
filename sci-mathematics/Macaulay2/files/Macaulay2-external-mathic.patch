@@ -1,0 +1,447 @@
+External mathic libraries from Macaulay2/M2 PR #4728, commit 606be2cda5.
+
+diff --git a/M2/Macaulay2/CMakeLists.txt b/M2/Macaulay2/CMakeLists.txt
+index bf19931124..487851aa4a 100644
+--- a/M2/Macaulay2/CMakeLists.txt
++++ b/M2/Macaulay2/CMakeLists.txt
+@@ -143,5 +143,9 @@ install(EXPORT Macaulay2 NAMESPACE Macaulay2::
+   COMPONENT devel EXCLUDE_FROM_ALL)
+ export(TARGETS M2-binary M2-engine M2-interpreter M2-supervisor
+   NAMESPACE Macaulay2:: FILE Macaulay2Config.cmake)
+-export(TARGETS mathicgb mathic memtailor
+-  NAMESPACE MathicGB:: FILE MathicGBConfig.cmake)
++if(_bundled_mathic_targets)
++  export(TARGETS ${_bundled_mathic_targets}
++    NAMESPACE MathicGB:: FILE MathicGBConfig.cmake)
++else()
++  file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/MathicGBConfig.cmake")
++endif()
+diff --git a/M2/Macaulay2/e/CMakeLists.txt b/M2/Macaulay2/e/CMakeLists.txt
+index b58d5c1f87..fc980e9a40 100644
+--- a/M2/Macaulay2/e/CMakeLists.txt
++++ b/M2/Macaulay2/e/CMakeLists.txt
+@@ -1,21 +1,18 @@
+ ###############################################################################
+ ## This directory contains the rules for building M2-engine and M2-unit-tests
+-## memtailor, mathic, and mathicgb are also imported as subdirectories here
++## Select system or bundled memtailor, mathic and mathicgb libraries here
+ ## - run unit tests:  ctest -R unit-tests (includes mathicgb and friends)
+ 
+ set(with_tbb ${WITH_TBB}) # for mathicgb
+ 
+-add_subdirectory(memtailor)
+-add_subdirectory(mathic)
+-add_subdirectory(mathicgb)
++include(select-mathic-libraries)
++include(mathic-library-tests)
+ 
+-target_compile_options(mathicgb PRIVATE
+-  -Wall -Wextra -Wno-unused-parameter -Wno-unused-value -Wno-unused-variable -Wno-sign-compare
+-  -Wno-deprecated-declarations
+-  )
+-
+-if(CMAKE_BUILD_TYPE MATCHES "Debug") # Debugging
+-  add_compile_definitions(MEMT_DEBUG MATHIC_DEBUG MATHICGB_DEBUG)
++if(NOT _mathicgb_external)
++  target_compile_options(mathicgb PRIVATE
++    -Wall -Wextra -Wno-unused-parameter -Wno-unused-value -Wno-unused-variable -Wno-sign-compare
++    -Wno-deprecated-declarations
++    )
+ endif()
+ 
+ ###############################################################################
+@@ -420,7 +417,7 @@ target_compile_options(M2-engine PRIVATE
+ ## Export the target
+ 
+ # TODO: change ARCHIVE to LIBRARY once M2-engine can be used independently
+-install(TARGETS M2-engine mathicgb mathic memtailor EXPORT Macaulay2
++install(TARGETS M2-engine ${_bundled_mathic_targets} EXPORT Macaulay2
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/Macaulay2/lib
+   COMPONENT devel EXCLUDE_FROM_ALL
+   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Macaulay2
+diff --git a/M2/cmake/check-libraries.cmake b/M2/cmake/check-libraries.cmake
+index e676fe52b9..437145d9cb 100644
+--- a/M2/cmake/check-libraries.cmake
++++ b/M2/cmake/check-libraries.cmake
+@@ -171,9 +171,8 @@ find_package(MSolve	0.7.0)
+ find_package(Frobby	0.9.0)
+ find_package(CDDLIB)  # 0.94m?
+ find_package(GTest	1.16)
+-#find_package(Memtailor 1.0.0)
+-#find_package(Mathic    1.0.0)
+-#find_package(Mathicgb  1.0.0)
++# memtailor, mathic and mathicgb are selected in Macaulay2/e
++# by select-mathic-libraries.cmake.
+ find_package(GLPK      4.59.0)
+ 
+ pkg_search_module(FFLAS_FFPACK	IMPORTED_TARGET	fflas-ffpack>=2.4.3)
+diff --git a/M2/cmake/mathic-library-tests.cmake b/M2/cmake/mathic-library-tests.cmake
+new file mode 100644
+index 0000000000..0a80d16969
+--- /dev/null
++++ b/M2/cmake/mathic-library-tests.cmake
+@@ -0,0 +1,51 @@
++# Keep CI's library test targets when using installed libraries. Copy just the
++# tests so their test/ includes work without placing bundled library headers
++# ahead of the installed target's headers in the include search path.
++if(NOT BUILD_TESTING)
++  return()
++endif()
++# Keep these source lists in sync with the pinned submodule test targets.
++set(_memtailor_tests ArenaTest BufferPoolTest MemoryBlocksTest testMain)
++set(_mathic_tests BitTriangle DivFinder HashTable PairQueue testMain)
++set(_mathicgb_tests F4MatrixBuilder F4MatrixReducer MathicIO MonoMonoid PrimeField
++  QuadMatrixBuilder Range Scanner SparseMatrix gb-test ideals mathicgb poly-test testMain)
++foreach(lib IN ITEMS memtailor mathic mathicgb)
++  if(NOT _${lib}_external)
++    continue()
++  endif()
++  set(test_root "${CMAKE_CURRENT_BINARY_DIR}/external-${lib}-tests")
++  file(GLOB_RECURSE test_files CONFIGURE_DEPENDS
++    RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/${lib}"
++    "${lib}/test/*.cpp" "${lib}/test/*.h" "${lib}/test/*.hpp")
++  if(lib STREQUAL "mathic")
++    file(GLOB helpers CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/${lib}"
++      "${lib}/divsim/*.h")
++    list(APPEND test_files ${helpers})
++  endif()
++  foreach(file IN LISTS test_files)
++    configure_file("${lib}/${file}" "${test_root}/${file}" COPYONLY)
++  endforeach()
++  set(sources)
++  foreach(test IN LISTS _${lib}_tests)
++    list(APPEND sources "${test_root}/test/${test}.cpp")
++  endforeach()
++  add_executable(${lib}-unit-tests ${sources})
++  target_include_directories(${lib}-unit-tests PRIVATE "${test_root}")
++  if(NOT GTEST_FOUND)
++    find_package(GTest QUIET)
++  endif()
++  if(GTEST_FOUND)
++    target_link_libraries(${lib}-unit-tests ${lib} GTest::GTest GTest::Main)
++  else()
++    if(NOT TARGET gtest)
++      include(FetchContent)
++      FetchContent_Declare(googletest
++        GIT_REPOSITORY https://github.com/google/googletest.git
++        GIT_TAG v1.16.0)
++      FetchContent_MakeAvailable(googletest)
++    endif()
++    target_link_libraries(${lib}-unit-tests ${lib} gtest)
++  endif()
++  include(GoogleTest)
++  gtest_discover_tests(${lib}-unit-tests TEST_PREFIX unit-tests:)
++endforeach()
+diff --git a/M2/cmake/select-mathic-libraries.cmake b/M2/cmake/select-mathic-libraries.cmake
+new file mode 100644
+index 0000000000..371ead95e1
+--- /dev/null
++++ b/M2/cmake/select-mathic-libraries.cmake
+@@ -0,0 +1,162 @@
++# Metadata is required: bare libraries/headers do not describe the debug ABI.
++include(CMakePushCheckState)
++include(CheckCXXSourceCompiles)
++
++function(_m2_mathic_probe target header macro result)
++  cmake_push_check_state(RESET)
++  set(CMAKE_REQUIRED_LIBRARIES ${target})
++  set(CMAKE_REQUIRED_QUIET TRUE)
++  foreach(value IN ITEMS ON OFF)
++    if(value)
++      set(condition "ifndef")
++    else()
++      set(condition "ifdef")
++    endif()
++    unset(_m2_probe CACHE)
++    check_cxx_source_compiles("#include <${header}.h>
++#${condition} ${macro}
++#error unexpected ABI flag
++#endif
++int main() { ${_m2_mathic_expression_${header}}; }" _m2_probe)
++    if(_m2_probe)
++      set(${result} ${value} PARENT_SCOPE)
++      cmake_pop_check_state()
++      return()
++    endif()
++  endforeach()
++  set(${result} UNKNOWN PARENT_SCOPE)
++  cmake_pop_check_state()
++endfunction()
++
++set(_m2_mathic_expression_memtailor "libmemtailorIsPresent()")
++set(_m2_mathic_expression_mathic "libmathicIsPresent()")
++set(_m2_mathic_expression_mathicgb "mgb::GroebnerConfiguration configuration(101, 2, 1)")
++set(_m2_mathic_version_memtailor 1.4)
++set(_m2_mathic_version_mathic 1.5)
++set(_m2_mathic_version_mathicgb 1.4)
++set(_m2_mathic_macro_memtailor MEMT_DEBUG)
++set(_m2_mathic_macro_mathic MATHIC_DEBUG)
++set(_m2_mathic_macro_mathicgb MATHICGB_DEBUG)
++
++foreach(lib IN ITEMS memtailor mathic mathicgb)
++  string(TOUPPER ${lib} upper)
++  set(${upper}_PROVIDER AUTO CACHE STRING "${lib} provider: AUTO, SYSTEM, or BUNDLED")
++  set_property(CACHE ${upper}_PROVIDER PROPERTY STRINGS AUTO SYSTEM BUNDLED)
++  if(NOT ${upper}_PROVIDER MATCHES "^(AUTO|SYSTEM|BUNDLED)$")
++    message(FATAL_ERROR "${upper}_PROVIDER must be AUTO, SYSTEM, or BUNDLED")
++  endif()
++  set(_${lib}_external FALSE)
++  set(_${lib}_reason "requested bundled library")
++  if(${upper}_PROVIDER STREQUAL "BUNDLED")
++    continue()
++  endif()
++  set(_${lib}_target "")
++  find_package(${lib} ${_m2_mathic_version_${lib}} CONFIG QUIET)
++  if(TARGET ${lib}::${lib})
++    set(_${lib}_target ${lib}::${lib})
++    set(_${lib}_origin "CMake: ${${lib}_DIR}")
++    set(_${lib}_version "${${lib}_VERSION}")
++  else()
++    find_package(PkgConfig QUIET)
++    if(PKG_CONFIG_FOUND)
++      unset(M2_${upper}_FOUND CACHE)
++      pkg_check_modules(M2_${upper} QUIET IMPORTED_TARGET ${lib}>=${_m2_mathic_version_${lib}})
++      if(TARGET PkgConfig::M2_${upper})
++        set(_${lib}_target PkgConfig::M2_${upper})
++        set(_${lib}_origin "pkg-config: ${M2_${upper}_PREFIX}")
++        set(_${lib}_version "${M2_${upper}_VERSION}")
++      endif()
++    endif()
++  endif()
++  set(_${lib}_reason "no ${lib} >= ${_m2_mathic_version_${lib}} CMake or pkg-config package found")
++  if(_${lib}_target)
++    _m2_mathic_probe(${_${lib}_target} ${lib} ${_m2_mathic_macro_${lib}} _${lib}_debug)
++    set(_${lib}_reason "installed ${lib} failed its compile/link check")
++    if(NOT _${lib}_debug STREQUAL "UNKNOWN")
++      set(_${lib}_external TRUE)
++      message(STATUS "${lib}: detected ${_${lib}_version} (${_${lib}_origin}; ${_m2_mathic_macro_${lib}}=${_${lib}_debug})")
++    endif()
++  endif()
++endforeach()
++
++# Compare transitive ABI flags as well as each library's own flags. Imported
++# usage requirements must describe the same dependencies M2 selected directly.
++foreach(lib IN ITEMS mathic mathicgb)
++  if(NOT _${lib}_external)
++    continue()
++  endif()
++  set(dependencies memtailor)
++  if(lib STREQUAL "mathicgb")
++    list(APPEND dependencies mathic)
++  endif()
++  foreach(dep IN LISTS dependencies)
++    if(NOT _${dep}_external)
++      continue()
++    endif()
++    _m2_mathic_probe(${_${lib}_target} ${dep} ${_m2_mathic_macro_${dep}} _dependency_debug)
++    if(NOT _dependency_debug STREQUAL _${dep}_debug)
++      set(_${lib}_external FALSE)
++      set(_${lib}_reason "its ${_m2_mathic_macro_${dep}} metadata disagrees with the selected ${dep}")
++    endif()
++  endforeach()
++endforeach()
++if(_mathicgb_external)
++  _m2_mathic_probe(${_mathicgb_target} mathicgb MATHICGB_NO_TBB _mathicgb_no_tbb)
++  if(_mathicgb_no_tbb STREQUAL "UNKNOWN" OR
++      (WITH_TBB AND _mathicgb_no_tbb) OR
++      (NOT WITH_TBB AND NOT _mathicgb_no_tbb))
++    set(_mathicgb_external FALSE)
++    set(_mathicgb_reason "installed MATHICGB_NO_TBB=${_mathicgb_no_tbb} disagrees with WITH_TBB=${WITH_TBB}")
++  endif()
++endif()
++
++# Never link an installed library with a second, bundled copy of its dependency.
++# A bundled Debug mathic/mathicgb also forces its dependencies' debug layouts.
++# Propagate fallbacks to a fixed point before creating any bundled targets.
++set(_selection_changed TRUE)
++while(_selection_changed)
++  set(_selection_changed FALSE)
++  if(_mathic_external AND NOT _memtailor_external)
++    set(_mathic_external FALSE)
++    set(_mathic_reason "system mathic requires system memtailor")
++    set(_selection_changed TRUE)
++  endif()
++  if(_mathicgb_external AND (NOT _mathic_external OR NOT _memtailor_external))
++    set(_mathicgb_external FALSE)
++    set(_mathicgb_reason "system mathicgb requires system mathic and memtailor")
++    set(_selection_changed TRUE)
++  endif()
++  if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR "Debug" IN_LIST CMAKE_CONFIGURATION_TYPES)
++    if(_memtailor_external AND NOT _memtailor_debug AND
++        (NOT _mathic_external OR NOT _mathicgb_external))
++      set(_memtailor_external FALSE)
++      set(_memtailor_reason "bundled Debug mathic/mathicgb requires MEMT_DEBUG=ON")
++      set(_selection_changed TRUE)
++    endif()
++    if(_mathic_external AND NOT _mathic_debug AND NOT _mathicgb_external)
++      set(_mathic_external FALSE)
++      set(_mathic_reason "bundled Debug mathicgb requires MATHIC_DEBUG=ON")
++      set(_selection_changed TRUE)
++    endif()
++  endif()
++endwhile()
++
++set(_bundled_mathic_targets)
++foreach(lib IN ITEMS memtailor mathic mathicgb)
++  string(TOUPPER ${lib} upper)
++  if(_${lib}_external)
++    add_library(${lib} ALIAS ${_${lib}_target})
++    message(STATUS "${lib}: using system library (${_m2_mathic_macro_${lib}}=${_${lib}_debug})")
++  else()
++    if(${upper}_PROVIDER STREQUAL "SYSTEM")
++      message(FATAL_ERROR "Cannot use system ${lib}: ${_${lib}_reason}")
++    endif()
++    add_subdirectory(${lib})
++    # The pinned submodules set these privately. Propagate their actual layout
++    # to the engine and to bundled libraries consuming a debug dependency.
++    target_compile_definitions(${lib} PUBLIC $<$<CONFIG:Debug>:${_m2_mathic_macro_${lib}}>)
++    list(APPEND _bundled_mathic_targets ${lib})
++    message(STATUS "${lib}: bundled (${_${lib}_reason})")
++  endif()
++endforeach()
++set(_bundled_mathic_targets "${_bundled_mathic_targets}" PARENT_SCOPE)
+diff --git a/M2/cmake/tests/test_mathic_providers.py b/M2/cmake/tests/test_mathic_providers.py
+new file mode 100644
+index 0000000000..efaa66e2f7
+--- /dev/null
++++ b/M2/cmake/tests/test_mathic_providers.py
+@@ -0,0 +1,139 @@
++#!/usr/bin/env python3
++"""Exercise provider selection with isolated CMake/pkg-config installations."""
++import os
++from pathlib import Path
++import subprocess
++import tempfile
++import unittest
++
++MODULES = Path(__file__).resolve().parents[1]
++LIBS = {'memtailor': '1.4', 'mathic': '1.5', 'mathicgb': '1.4'}
++
++
++class Providers(unittest.TestCase):
++    def setUp(self):
++        temp = tempfile.TemporaryDirectory()
++        self.addCleanup(temp.cleanup)
++        self.root = Path(temp.name)
++        self.prefix = self.root / 'prefix'
++        headers = self.prefix / 'include'
++        headers.mkdir(parents=True)
++        for lib, version in LIBS.items():
++            api = (f'inline void lib{lib}IsPresent() {{}}' if lib != 'mathicgb' else
++                   'namespace mgb { struct GroebnerConfiguration { '
++                   'GroebnerConfiguration(int,int,int) {} }; }')
++            (headers / f'{lib}.h').write_text(api)
++            config = self.prefix / 'lib/cmake' / lib
++            config.mkdir(parents=True)
++            (config / f'{lib}Config.cmake').write_text(
++                f'add_library({lib}::{lib} INTERFACE IMPORTED)\n'
++                f'set_target_properties({lib}::{lib} PROPERTIES '
++                f'INTERFACE_INCLUDE_DIRECTORIES "{headers}")\n')
++            (config / f'{lib}ConfigVersion.cmake').write_text(
++                f'set(PACKAGE_VERSION {version})\nset(PACKAGE_VERSION_COMPATIBLE TRUE)\n')
++            pc = self.prefix / 'lib/pkgconfig'
++            pc.mkdir(exist_ok=True)
++            (pc / f'{lib}.pc').write_text(
++                f'Name: {lib}\nDescription: Provider test fixture\nVersion: {version}\n'
++                f'Cflags: -I{headers}\nLibs:\n')
++        self.source = self.root / 'source'
++        engine = self.source / 'e'
++        engine.mkdir(parents=True)
++        (self.source / 'CMakeLists.txt').write_text(
++            'cmake_minimum_required(VERSION 3.25)\nproject(Providers LANGUAGES CXX)\n'
++            f'list(PREPEND CMAKE_MODULE_PATH "{MODULES}")\n'
++            'option(WITH_TBB "TBB" ON)\nadd_subdirectory(e)\n')
++        (engine / 'CMakeLists.txt').write_text(
++            'include(select-mathic-libraries)\n'
++            'file(WRITE "${CMAKE_BINARY_DIR}/selection" '
++            '"${_memtailor_external};${_mathic_external};${_mathicgb_external}")\n')
++        for lib in LIBS:
++            (engine / lib).mkdir()
++            (engine / lib / 'dummy.cpp').write_text('int dummy;\n')
++            (engine / lib / 'CMakeLists.txt').write_text(f'add_library({lib} STATIC dummy.cpp)\n')
++
++    def configure(self, *options, error=None):
++        env = dict(os.environ, PKG_CONFIG_LIBDIR=str(self.prefix / 'lib/pkgconfig'),
++                   PKG_CONFIG_PATH='')
++        result = subprocess.run(
++            ['cmake', '-S', str(self.source), '-B', str(self.root / 'build'),
++             f'-DCMAKE_PREFIX_PATH={self.prefix}', '-DCMAKE_BUILD_TYPE=Release', *options],
++            env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
++        if error:
++            self.assertNotEqual(result.returncode, 0, result.stdout)
++            self.assertIn(error, ' '.join(result.stdout.split()))
++        else:
++            self.assertEqual(result.returncode, 0, result.stdout)
++            return (self.root / 'build/selection').read_text()
++
++    def test_system(self):
++        self.assertEqual(self.configure(*[f'-D{x.upper()}_PROVIDER=SYSTEM' for x in LIBS]),
++                         'TRUE;TRUE;TRUE')
++
++    def test_release_libraries_in_debug_engine(self):
++        self.assertEqual(self.configure('-DCMAKE_BUILD_TYPE=Debug'), 'TRUE;TRUE;TRUE')
++
++    def test_bundled(self):
++        self.assertEqual(self.configure(*[f'-D{x.upper()}_PROVIDER=BUNDLED' for x in LIBS]),
++                         'FALSE;FALSE;FALSE')
++
++    def test_dependency_fallback(self):
++        self.assertEqual(self.configure('-DMEMTAILOR_PROVIDER=BUNDLED'), 'FALSE;FALSE;FALSE')
++
++    def test_explicit_inconsistent_providers(self):
++        self.configure('-DMEMTAILOR_PROVIDER=BUNDLED', '-DMATHIC_PROVIDER=SYSTEM',
++                       error='system mathic requires system memtailor')
++
++    def test_debug_bundled_dependency_layout(self):
++        self.assertEqual(self.configure('-DCMAKE_BUILD_TYPE=Debug',
++                                        '-DMATHICGB_PROVIDER=BUNDLED'), 'FALSE;FALSE;FALSE')
++
++    def test_debug_system_dependency_layout_error(self):
++        self.configure('-DCMAKE_BUILD_TYPE=Debug', '-DMATHICGB_PROVIDER=BUNDLED',
++                       '-DMEMTAILOR_PROVIDER=SYSTEM',
++                       error='bundled Debug mathic/mathicgb requires MEMT_DEBUG=ON')
++
++    def test_tbb_mismatch_fallback(self):
++        self.assertEqual(self.configure('-DWITH_TBB=OFF'), 'TRUE;TRUE;FALSE')
++
++    def test_tbb_mismatch_required(self):
++        self.configure('-DWITH_TBB=OFF', '-DMATHICGB_PROVIDER=SYSTEM',
++                       error='disagrees with WITH_TBB=OFF')
++
++    def test_transitive_abi_mismatch(self):
++        p = self.prefix / 'lib/cmake/mathic/mathicConfig.cmake'
++        with p.open('a') as out:
++            out.write('set_property(TARGET mathic::mathic PROPERTY '
++                      'INTERFACE_COMPILE_DEFINITIONS MEMT_DEBUG)\n')
++        self.assertEqual(self.configure(), 'TRUE;FALSE;FALSE')
++
++    def test_pkg_config(self):
++        self.assertEqual(self.configure(*[f'-DCMAKE_DISABLE_FIND_PACKAGE_{x}=TRUE'
++                                          for x in LIBS]), 'TRUE;TRUE;TRUE')
++
++    def test_no_tbb_system_library(self):
++        p = self.prefix / 'lib/cmake/mathicgb/mathicgbConfig.cmake'
++        with p.open('a') as out:
++            out.write('set_property(TARGET mathicgb::mathicgb PROPERTY '
++                      'INTERFACE_COMPILE_DEFINITIONS MATHICGB_NO_TBB)\n')
++        self.assertEqual(self.configure('-DWITH_TBB=OFF'), 'TRUE;TRUE;TRUE')
++
++    def test_reconfigure_refreshes_abi(self):
++        self.assertEqual(self.configure(), 'TRUE;TRUE;TRUE')
++        p = self.prefix / 'lib/cmake/mathic/mathicConfig.cmake'
++        with p.open('a') as out:
++            out.write('set_property(TARGET mathic::mathic PROPERTY '
++                      'INTERFACE_COMPILE_DEFINITIONS MEMT_DEBUG)\n')
++        self.assertEqual(self.configure(), 'TRUE;FALSE;FALSE')
++
++    def test_unusable_metadata(self):
++        p = self.prefix / 'include/mathic.h'
++        p.write_text('#error unusable installed header\n')
++        self.configure('-DMATHIC_PROVIDER=SYSTEM', error='failed its compile/link check')
++
++    def test_invalid_provider(self):
++        self.configure('-DMATHIC_PROVIDER=TYPO', error='MATHIC_PROVIDER must be')
++
++
++if __name__ == '__main__':
++    unittest.main()
