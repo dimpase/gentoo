@@ -7,7 +7,7 @@ inherit cmake
 
 DESCRIPTION="C++ library of special purpose memory allocators"
 HOMEPAGE="https://github.com/Macaulay2/memtailor"
-SRC_URI="https://github.com/Macaulay2/${PN}/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/Macaulay2/${PN}/releases/download/v${PV}/${P}.tar.gz"
 
 LICENSE="BSD"
 SLOT="0"
@@ -17,7 +17,6 @@ RESTRICT="!test? ( test )"
 
 DEPEND="test? ( >=dev-cpp/gtest-1.10.0 )"
 
-PATCHES=( "${FILESDIR}/${P}-cmake-package.patch" )
 DOCS=( README.md )
 
 src_configure() {
